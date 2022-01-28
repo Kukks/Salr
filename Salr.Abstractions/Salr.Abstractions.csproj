@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+    <PropertyGroup>
+        <TargetFramework>net6.0</TargetFramework>
+        <RazorLangVersion>3.0</RazorLangVersion>
+        <RootNamespace>Hara.Abstractions</RootNamespace>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Microsoft.Extensions.FileProviders.Abstractions" Version="3.1.6" />
+      <PackageReference Include="Microsoft.JSInterop" Version="6.0.1" />
+      <PackageReference Include="System.Text.Json" Version="4.7.2" />
+    </ItemGroup>
+
+    <PropertyGroup Condition="'$(Configuration)' == 'Release' ">
+        <DefineConstants>LIVESHARP_DISABLE</DefineConstants>
+    </PropertyGroup>
+</Project>
