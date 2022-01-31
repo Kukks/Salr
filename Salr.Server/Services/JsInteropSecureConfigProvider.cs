@@ -1,9 +1,9 @@
 using System.Text.Json;
 using System.Threading.Tasks;
-using Hara.Abstractions.Contracts;
 using Salr.WebCommon;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.JSInterop;
+using Salr.Abstractions.Contracts;
 
 namespace Salr.Server.Services
 {

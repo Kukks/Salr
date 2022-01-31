@@ -1,0 +1,61 @@
+﻿@page "/messages/{pubkey}"
+@inject Db _db
+
+<div class="d-flex flex-grow-1 flex-row">
+    <MudHidden Breakpoint="Breakpoint.SmAndDown">
+        <MudPaper  Class="pa-3 mr-6" MinWidth="250px">
+            <MudButton EndIcon="@Icons.Material.Filled.Add" Color="Color.Secondary" FullWidth="true">Create</MudButton>
+            <ChatChannels />
+        </MudPaper>
+    </MudHidden>
+    <MudPaper  Class="py-4 flex-grow-1">
+        <MudToolBar Dense="true">
+            <MudHidden Breakpoint="Breakpoint.MdAndUp">
+                <MudIconButton OnClick="() => open = true" Icon="@Icons.Material.Outlined.Menu" Color="Color.Inherit" Class="mr-2 ml-n2" />
+            </MudHidden>
+            <MudText Typo="Typo.h6">@Pubkey</MudText>
+        </MudToolBar>
+        <div class="d-flex flex-column px-4">
+            
+            @foreach (var e in Events)
+            {
+                if (_db.Events.TryGetValue(e, out var nostrEvent))
+                {
+                    var content = nostrEvent.Kind == 4 ? _db.DecryptedNIP4Content[e] : nostrEvent.Content;
+
+                    <UserMessage Message="@content" PubKey="@nostrEvent.PublicKey"/>
+                }
+
+            }
+        </div>
+        <MudPaper  Class="d-flex flex-row px-2 mx-4" Style="background-color: var(--mud-palette-background-grey);">
+            <MudTextField @bind-Value="NewChatMessage" Placeholder="Message #chat" DisableUnderLine="true" Class="mt-n2 mx-4" Lines="5"></MudTextField>
+            <MudIconButton Icon="@Icons.Material.Outlined.Send" Color="Color.Warning"></MudIconButton>
+        </MudPaper>
+    </MudPaper>
+</div>
+
+<MudDrawer @bind-Open="@open" Anchor="Anchor.Left" Elevation="1" Variant="@DrawerVariant.Temporary">
+    <MudButton EndIcon="@Icons.Material.Filled.Add" Color="Color.Secondary" Class="mx-4 mt-6 mb-4">Create DM</MudButton>
+        <ChatChannels />
+</MudDrawer>
+
+@code
+{
+    [Parameter]
+    public string Pubkey{ get; set; }
+
+    public string[] Events { get; set; }
+    
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        Events = _db.GetDirectMessageThread(Pubkey).ToArray();
+
+    }
+
+    bool open;
+
+    public string? NewChatMessage { get; set; }
+}
+

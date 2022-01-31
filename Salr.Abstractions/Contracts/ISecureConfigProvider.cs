@@ -1,4 +1,4 @@
-namespace Hara.Abstractions.Contracts
+namespace Salr.Abstractions.Contracts
 {
     public interface ISecureConfigProvider: IConfigProvider { }
 }

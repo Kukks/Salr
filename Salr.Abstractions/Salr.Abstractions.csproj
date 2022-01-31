@@ -3,7 +3,6 @@
     <PropertyGroup>
         <TargetFramework>net6.0</TargetFramework>
         <RazorLangVersion>3.0</RazorLangVersion>
-        <RootNamespace>Hara.Abstractions</RootNamespace>
     </PropertyGroup>
 
     <ItemGroup>

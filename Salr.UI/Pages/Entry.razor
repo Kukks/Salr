@@ -1,0 +1,31 @@
+﻿@page "/"
+
+@code {
+    [Inject]
+    private Db Db { get; set; }
+    [Inject]
+    private NavigationManager NavigationManager { get; set; }
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        if (Db.Key is null)
+        {
+            NavigationManager.NavigateTo("/create-key");
+        }else if (Db.ActiveRelays.Any() is false)
+        {
+            NavigationManager.NavigateTo("/relays");
+        }
+        else if (Db.NIP4Authors.Any())
+        {
+            var lastDm = Db.DecryptedNIP4Content.LastOrDefault().Key;
+
+            var lastDmAuthor = Db.PubKeyHex ==  Db.Events[lastDm].PublicKey ? Db.Events[lastDm].Tags.First(tag => tag.TagIdentifier == "p").Data.First() : Db.Events[lastDm].PublicKey;
+            NavigationManager.NavigateTo($"/messages/{lastDmAuthor}");
+        }
+        else
+        {
+            NavigationManager.NavigateTo("/lonely");
+        }
+    }
+
+}

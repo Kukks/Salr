@@ -1,9 +1,4 @@
-using System;
-using System.Net.Http;
 using Blazor.Extensions;
-using Hara.Abstractions;
-using Hara.Abstractions.Contracts;
-using Hara.Abstractions.Services;
 using Salr.UI.Services;
 using Salr.WebCommon;
 using Microsoft.AspNetCore.Builder;
@@ -12,6 +7,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using MudBlazor.Services;
+using Salr.Abstractions.Contracts;
+using Salr.Abstractions.Services;
 using Salr.Server.Services;
 
 namespace Salr.Server
@@ -34,9 +31,7 @@ namespace Salr.Server
 
             services.AddUIServices();
             services.AddSingleton<ICounterState, CounterState>();
-            services.AddScoped<IWebsiteLauncher, JsInteropWebsiteLauncher>();
             services.AddSingleton<ILocalContentFetcher, FileProviderLocalContentFetcher>();
-            services.AddSingleton<IWeatherForecastFetcher, WeatherForecastFetcher>();
             services.AddScoped<IConfigProvider, JsInteropConfigProvider>();
             services.AddScoped<ISecureConfigProvider, JsInteropSecureConfigProvider>();
             services.AddSingleton(provider =>

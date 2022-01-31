@@ -1,0 +1,27 @@
+﻿@page "/Lonely"
+@using NNostr.Client
+@using NBitcoin.Secp256k1
+<h3>Lonely</h3>
+<EditForm Model="this" OnSubmit="GoToDm">
+
+    <MudTextField @bind-Value="PubKey"  HelperText="public key" Variant="Variant.Filled"/>
+    <MudButton ButtonType="ButtonType.Submit">Message!</MudButton>
+</EditForm>
+
+@code {
+
+    [Inject]
+    public NavigationManager NavigationManager { get; set; }
+
+    public string? PubKey { get; set; }
+
+
+    private void GoToDm()
+    {
+        if (ECXOnlyPubKey.TryCreate(new ReadOnlySpan<byte>(PubKey.DecodHexData()), out var pubkey))
+        {
+            NavigationManager.NavigateTo($"/messages/{PubKey}");
+        }
+    }
+
+}

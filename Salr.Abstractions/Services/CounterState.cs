@@ -1,7 +1,7 @@
 ﻿using System;
-using Hara.Abstractions.Contracts;
+using Salr.Abstractions.Contracts;
 
-namespace Hara.Abstractions.Services
+namespace Salr.Abstractions.Services
 {
     public class CounterState : ICounterState
     {

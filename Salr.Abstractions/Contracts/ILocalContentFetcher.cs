@@ -1,7 +1,7 @@
 using System.IO;
 using System.Threading.Tasks;
 
-namespace Hara.Abstractions.Contracts
+namespace Salr.Abstractions.Contracts
 {
     public interface ILocalContentFetcher
     {

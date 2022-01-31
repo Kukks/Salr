@@ -1,4 +1,3 @@
-using Hara.Abstractions.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Salr.UI.Services
@@ -7,9 +6,7 @@ namespace Salr.UI.Services
     {
         public static IServiceCollection AddUIServices(this IServiceCollection serviceCollection)
         {
-            serviceCollection.AddSingleton<UIStateService>();
-            serviceCollection.AddSingleton<IUIStateService>(provider => provider.GetService<UIStateService>());
-
+            serviceCollection.AddSingleton<Db>();
             return serviceCollection;
         }
     }

@@ -1,9 +1,9 @@
 using System.IO;
 using System.Threading.Tasks;
-using Hara.Abstractions.Contracts;
 using Microsoft.Extensions.FileProviders;
+using Salr.Abstractions.Contracts;
 
-namespace Hara.Abstractions.Services
+namespace Salr.Abstractions.Services
 {
     public class FileProviderLocalContentFetcher : ILocalContentFetcher
     {

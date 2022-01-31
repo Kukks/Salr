@@ -1,8 +1,8 @@
 using System;
 using System.Threading.Tasks;
 using Blazor.Extensions;
-using Hara.Abstractions.Contracts;
 using Microsoft.JSInterop;
+using Salr.Abstractions.Contracts;
 
 namespace Salr.WebCommon
 {

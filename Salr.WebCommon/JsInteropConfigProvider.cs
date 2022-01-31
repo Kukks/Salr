@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Threading.Tasks;
-using Hara.Abstractions.Contracts;
 using Microsoft.JSInterop;
+using Salr.Abstractions.Contracts;
 
 namespace Salr.WebCommon
 {

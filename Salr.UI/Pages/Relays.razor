@@ -1,0 +1,59 @@
+﻿@page "/relays"
+@using System.Threading
+@using NNostr.Client
+<h3>Relays</h3>
+
+<MudPaper >
+    <MudList Clickable="true">
+        @foreach (var known in Db.KnownRelays)
+        {
+            var active = Db.ActiveRelays.TryGetValue(known, out var relay) ? "mud-selected-item" : string.Empty;
+            var icon = relay is not null ? Icons.Filled.OfflineBolt : null;
+            var iconColor = relay?.Status == Db.RelayStatus.Connected ? Color.Tertiary : Color.Error;
+            <MudListItem Text="@known.ToString()" Class="@active" Icon="@icon" IconColor="@iconColor" OnClick="() => ToggleRelay(known)"></MudListItem>
+        }
+    </MudList>
+    @if (!string.IsNullOrEmpty(ErrorText))
+    {
+        <MudText Color="Color.Error">@ErrorText</MudText>
+    }
+</MudPaper>
+
+<MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="ErrorText != null" ButtonType="ButtonType.Button" Link="/">Proceed</MudButton>
+
+
+@code {
+
+
+    [Inject]
+    private Db Db { get; set; }
+
+    [Inject]
+    private NavigationManager NavigationManager { get; set; }
+
+    private string ErrorText => Db.ActiveRelays.Any() ? null : "At least one relay must be active";
+
+    private async Task ToggleRelay(Uri known)
+    {
+        if (Db.ActiveRelays.TryGetValue(known, out var activeRelay))
+        {
+            await activeRelay.Listener.StopAsync(CancellationToken.None);
+            activeRelay.Listener.Dispose();
+            Db.ActiveRelays.Remove(known);
+        }
+        else
+        {
+            Db.KnownRelays.Add(known);
+            var relay = new Db.ActiveRelay()
+            {
+                Status = Db.RelayStatus.Disconnected,
+                Listener = new NostrRelayListener(known, Db)
+            };
+            if (Db.ActiveRelays.TryAdd(known, relay))
+            {
+                await relay.Listener.StartAsync(CancellationToken.None);
+            }
+        }
+    }
+
+}

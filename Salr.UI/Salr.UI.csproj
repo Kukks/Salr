@@ -11,16 +11,12 @@
         <PackageReference Include="Microsoft.AspNetCore.Components" Version="6.0.1" />
         <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="6.0.1" />
         <PackageReference Include="MudBlazor" Version="6.0.5" />
+        <PackageReference Include="NNostr.Client" Version="0.0.7" />
     </ItemGroup>
 
 
     <ItemGroup>
       <ProjectReference Include="..\Salr.Abstractions\Salr.Abstractions.csproj" />
-    </ItemGroup>
-
-
-    <ItemGroup>
-      <Folder Include="Pages" />
     </ItemGroup>
     
 

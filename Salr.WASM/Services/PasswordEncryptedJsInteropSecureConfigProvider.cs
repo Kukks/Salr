@@ -1,9 +1,9 @@
 using System.Text.Json;
 using System.Threading.Tasks;
-using Hara.Abstractions.Contracts;
-using Hara.Abstractions.Services;
 using Salr.WebCommon;
 using Microsoft.JSInterop;
+using Salr.Abstractions.Contracts;
+using Salr.Abstractions.Services;
 
 namespace Salr.WASM.Services
 {

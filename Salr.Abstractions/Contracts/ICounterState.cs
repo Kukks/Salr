@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Hara.Abstractions.Contracts
+namespace Salr.Abstractions.Contracts
 {
     public interface ICounterState
     {
