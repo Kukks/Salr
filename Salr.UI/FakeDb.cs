@@ -9,9 +9,6 @@ namespace Salr.UI;
 
 public class Db
 {
-    public class UserMetadata
-    {
-    }
     public ECPrivKey Key { get; set; }
     public ECXOnlyPubKey PubKey => Key.CreateXOnlyPubKey();
     public string PubKeyHex => PubKey.ToBytes().ToHex();
@@ -81,6 +78,7 @@ public class Db
 
     public IEnumerable<string> GetDirectMessageThread(string pubkey)
     {
+        
        return  Events.Where(pair =>
             //evt is a dm
             pair.Value.Kind == 4 &&

@@ -1,0 +1,18 @@
+﻿@using System.Linq.Expressions
+@if (EditContext is not null)
+{
+    var messages = EditContext.GetValidationMessages(For);
+    foreach (var message in messages)
+    {
+        <MudText Color="Color.Error">@message</MudText>
+    }
+}
+
+@code {
+    
+    [CascadingParameter]
+    public EditContext EditContext { get; set; }
+    
+    [Parameter]
+    public Expression<Func<object>> For { get; set; }
+}

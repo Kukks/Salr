@@ -1,26 +1,23 @@
 ﻿@page "/relays"
 @using System.Threading
-@using NNostr.Client
-<h3>Relays</h3>
 
-<MudPaper >
-    <MudList Clickable="true">
-        @foreach (var known in Db.KnownRelays)
-        {
-            var active = Db.ActiveRelays.TryGetValue(known, out var relay) ? "mud-selected-item" : string.Empty;
-            var icon = relay is not null ? Icons.Filled.OfflineBolt : null;
-            var iconColor = relay?.Status == Db.RelayStatus.Connected ? Color.Tertiary : Color.Error;
-            <MudListItem Text="@known.ToString()" Class="@active" Icon="@icon" IconColor="@iconColor" OnClick="() => ToggleRelay(known)"></MudListItem>
-        }
-    </MudList>
-    @if (!string.IsNullOrEmpty(ErrorText))
-    {
-        <MudText Color="Color.Error">@ErrorText</MudText>
-    }
-</MudPaper>
+<MudContainer Class="mt-16" MaxWidth="MaxWidth.Medium">
+    <MudText Typo="Typo.h3" Align="Align.Center" GutterBottom="true">Create or import your key</MudText>
+    <ValidationEditContext Model="this" @ref="_validationEditContext" Validate="Validate" OnValidSubmit="Submit">
+        <MudList Clickable="true" >
+            @foreach (var known in Db.KnownRelays)
+            {
+                var active = Db.ActiveRelays.TryGetValue(known, out var relay) ? "mud-selected-item" : string.Empty;
+                var icon = relay is not null ? Icons.Filled.OfflineBolt : null;
+                var iconColor = relay?.Status == Db.RelayStatus.Connected ? Color.Tertiary : Color.Error;
+                <MudListItem  Text="@known.ToString()" Class="@active" Icon="@icon" IconColor="@iconColor" OnClick="() => ToggleRelay(known)"></MudListItem>
+            }
+        </MudList>
+        <MudErrorMessage For="() => Db.ActiveRelays"></MudErrorMessage>
+         <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto" Disabled="_validationEditContext.Invalid">Submit</MudButton>
+    </ValidationEditContext>
 
-<MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="ErrorText != null" ButtonType="ButtonType.Button" Link="/">Proceed</MudButton>
-
+</MudContainer>
 
 @code {
 
@@ -30,8 +27,6 @@
 
     [Inject]
     private NavigationManager NavigationManager { get; set; }
-
-    private string ErrorText => Db.ActiveRelays.Any() ? null : "At least one relay must be active";
 
     private async Task ToggleRelay(Uri known)
     {
@@ -54,6 +49,24 @@
                 await relay.Listener.StartAsync(CancellationToken.None);
             }
         }
+        _validationEditContext.NotifyFieldChanged(() => Db.ActiveRelays);
+    }
+
+    private ValidationEditContext _validationEditContext;
+
+    
+    private void Submit()
+    {
+        NavigationManager.NavigateTo("/");
+    }
+
+    private Task Validate()
+    {
+        if (!Db.ActiveRelays.Any())
+        {
+            _validationEditContext.MessageStore.Add(() => Db.ActiveRelays, "You must have at least one active relay.");
+        }
+        return Task.CompletedTask;
     }
 
 }

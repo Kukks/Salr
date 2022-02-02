@@ -2,51 +2,46 @@
 @using NBitcoin.Secp256k1
 @using System.Security.Cryptography
 @using NNostr.Client
-<h3>CreateKey</h3>
-<EditForm Model="this" OnSubmit="Submit">
+<MudContainer Class="mt-16" MaxWidth="MaxWidth.Medium">
+    <MudText Typo="Typo.h3" Align="Align.Center" GutterBottom="true">Create or import your key</MudText>
+    <ValidationEditContext Model="this" @ref="_validationEditContext" Validate="Validate" OnValidSubmit="Submit">
+        <MudTextField
+            @bind-Value="Key"
+            HelperText="Private key in hex format"
+            Variant="Variant.Filled"
+            AdornmentIcon="@Icons.Material.Filled.Create"
+            Adornment="Adornment.End"
+            OnAdornmentClick="GenerateKey"
+            For="() => Key"/>
+        <MudErrorMessage For="() => Key"></MudErrorMessage>
+        <MudTextField @bind-Value="PubKey" ReadOnly="true" HelperText="public key" Variant="Variant.Filled"/>
+         <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto"  Disabled="_validationEditContext.Invalid">Submit</MudButton>
+    </ValidationEditContext>
 
-    <MudTextField @bind-Value="Key" Error="ErrorText != null" ErrorText="@ErrorText" HelperText="Private key in hex format" Variant="Variant.Filled" AdornmentIcon="@Icons.Material.Filled.Create" Adornment="Adornment.End" OnAdornmentClick="GenerateKey"/>
-    <MudTextField @bind-Value="PubKey" ReadOnly="true" HelperText="public key" Variant="Variant.Filled"/>
-    
-    <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="ErrorText != null" ButtonType="ButtonType.Submit">Save</MudButton>
-</EditForm>
+</MudContainer>
 
 @code {
 
+    private ValidationEditContext _validationEditContext;
 
     [Inject]
     private Db Db { get; set; }
+
     [Inject]
     private NavigationManager NavigationManager { get; set; }
 
-    private string ErrorText { get; set; }
-
-    private string Key
-    {
-        get => _key;
-        set
-
-        {
-            ErrorText = null;
-            _key = value;
-        }
-    }
+    private string Key { get; set; }
 
     public void GenerateKey()
     {
-        if (ECPrivKey.TryCreate(new ReadOnlySpan<byte>(RandomNumberGenerator.GetBytes(32)), out var key))
-        {
-            Span<byte> derOutput = new Span<byte>(new byte[32]);
-            key.WriteToSpan( derOutput);
-            Key = Convert.ToHexString(derOutput);
-            
-            PubKey = key.CreateXOnlyPubKey().ToBytes().ToHex();
-        }
+        if (!ECPrivKey.TryCreate(new ReadOnlySpan<byte>(RandomNumberGenerator.GetBytes(32)), out var key)) return;
+        Key = NostrExtensions.ToString(key);
+        PubKey = key.CreateXOnlyPubKey().ToBytes().ToHex();
     }
 
     public string PubKey { get; set; }
 
-    public void Submit()
+    public Task Validate()
     {
         if (!string.IsNullOrEmpty(Key))
         {
@@ -55,25 +50,31 @@
                 var key = Key.DecodHexData();
                 if (NBitcoin.Secp256k1.ECPrivKey.TryCreate(key, out var privKey))
                 {
-                    Db.Key = privKey;
-                    NavigationManager.NavigateTo("/");
+                    PrivKey = privKey;
                 }
                 else
                 {
-                    ErrorText = "Key was an incorrect format.";
+                    _validationEditContext.MessageStore.Add(() => Key, "Key was an incorrect format.");
                 }
             }
             catch (Exception e)
             {
-                ErrorText = "Key was an incorrect format.";
+                _validationEditContext.MessageStore.Add(() => Key, "Key was an incorrect format.");
             }
         }
         else
         {
-            ErrorText = "Key is required.";
+            _validationEditContext.MessageStore.Add(() => Key, "Key was an incorrect format.");
         }
+        return Task.CompletedTask;
     }
 
+    public ECPrivKey PrivKey { get; set; }
 
-    private string _key;
+    private void Submit()
+    {
+        Db.Key = PrivKey;
+        NavigationManager.NavigateTo("/");
+    }
+
 }

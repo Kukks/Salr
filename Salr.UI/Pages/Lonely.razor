@@ -1,12 +1,19 @@
 ﻿@page "/Lonely"
 @using NNostr.Client
 @using NBitcoin.Secp256k1
-<h3>Lonely</h3>
-<EditForm Model="this" OnSubmit="GoToDm">
 
-    <MudTextField @bind-Value="PubKey"  HelperText="public key" Variant="Variant.Filled"/>
-    <MudButton ButtonType="ButtonType.Submit">Message!</MudButton>
-</EditForm>
+<MudContainer Class="mt-16" MaxWidth="MaxWidth.Medium">
+    <MudText Typo="Typo.h3" Align="Align.Center" GutterBottom="true">New Direct Message</MudText>
+    <ValidationEditContext Model="this" @ref="_validationEditContext" Validate="Validate" OnValidSubmit="Submit">
+        <MudTextField
+            @bind-Value="PubKey"
+            HelperText="Public key"
+            Variant="Variant.Filled"
+            For="() => PubKey"/>
+        <MudErrorMessage For="() => PubKey"></MudErrorMessage>
+        <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto" Disabled="_validationEditContext.Invalid">Submit</MudButton>
+    </ValidationEditContext>
+</MudContainer>
 
 @code {
 
@@ -22,6 +29,33 @@
         {
             NavigationManager.NavigateTo($"/messages/{PubKey}");
         }
+    }
+
+    private ValidationEditContext _validationEditContext;
+    private ECXOnlyPubKey _parsedPubKey;
+
+    private void Submit()
+    {
+        NavigationManager.NavigateTo($"/messages/{PubKey}");
+    }
+
+    private Task Validate()
+    {
+        try
+        {
+            if (ECXOnlyPubKey.TryCreate(new ReadOnlySpan<byte>(PubKey.DecodHexData()), out _))
+            {
+            }
+            else
+            {
+                _validationEditContext.MessageStore.Add(() => PubKey, "The public key was in an invalid format");
+            }
+        }
+        catch (Exception e)
+        {
+            _validationEditContext.MessageStore.Add(() => PubKey, "The public key was in an invalid format");
+        }
+        return Task.CompletedTask;
     }
 
 }
