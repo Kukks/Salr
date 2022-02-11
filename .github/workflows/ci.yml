@@ -14,11 +14,11 @@ jobs:
         with:
           dotnet-version: 6.0.x
 
+      - name: Install wasmtool
+        run: dotnet workload install wasm-tools
       # Run tests
       - name: Test
         run: dotnet test
-      - name: Install wasmtool
-        run: dotnet workload install wasm-tools
       # Generate the website
       - name: Publish
         run: dotnet publish Salr.WASM/Salr.WASM.csproj --configuration Release
