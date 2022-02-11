@@ -14,9 +14,7 @@
     }
     else
     {
-        <ChatThreadItem EventId="@Pubkey" AllowReply="false" Depth="0" NestedMode="false"></ChatThreadItem>
-        <MudSpacer></MudSpacer>
-        <ChatThread Events="Events" AllowReply="false" NestedMode="false" ParentEvent="@Pubkey"></ChatThread>
+        <ChatThread Events="Events" AllowReply="true" NestedMode="true" OnSendReply="tuple => ConstructEvent(tuple.message, tuple.parentEventId)"></ChatThread>
     }
 
     <MudScrollToTop TopOffset="64" Selector="#unique_id_scroll_section">

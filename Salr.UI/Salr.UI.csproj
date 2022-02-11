@@ -15,13 +15,7 @@
         <PackageReference Include="MudBlazor" Version="6.0.6" />
         <PackageReference Include="NNostr.Client" Version="0.0.14" />
     </ItemGroup>
-
-
     <ItemGroup>
       <ProjectReference Include="..\Salr.Abstractions\Salr.Abstractions.csproj" />
     </ItemGroup>
-
-  
-    
-
 </Project>

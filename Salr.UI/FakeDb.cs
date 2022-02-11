@@ -61,7 +61,7 @@ public class Db
         if (!Events.TryAdd(e.Id, e)) return;
         if (UnseenEvents.Remove(e.Id))
         {
-            EventNoLongerPending.Invoke(this, e.Id);
+            EventNoLongerPending?.Invoke(this, e.Id);
         }
         AuthorToEvent.Add(e.PublicKey, e.Id);
         var taggedEvent = e.Tags.FirstOrDefault(tag => tag.TagIdentifier == "e" && tag.Data.Any())?.Data?.First();
