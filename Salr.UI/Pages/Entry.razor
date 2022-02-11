@@ -10,10 +10,10 @@
         await base.OnInitializedAsync();
         if (Db.Key is null)
         {
-            NavigationManager.NavigateTo("/create-key");
+            NavigationManager.NavigateTo(CreateKey.PageLinks.CreateKey());
         }else if (Db.ActiveRelays.Any() is false)
         {
-            NavigationManager.NavigateTo("/relays");
+            NavigationManager.NavigateTo(Relays.PageLinks.ChooseRelay());
         }
         else if (Db.NIP4Authors.Any())
         {

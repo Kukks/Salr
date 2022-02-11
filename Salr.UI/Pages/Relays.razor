@@ -10,6 +10,14 @@
 </MudContainer>
 
 @code {
+    
+    public partial class PageLinks
+    {
+        public static string ChooseRelay()
+        {
+            return $"relays";
+        }
+    }
     [Inject]
     private Db Db { get; set; }
 
@@ -21,7 +29,7 @@
 
     private void Submit()
     {
-        NavigationManager.NavigateTo("/");
+        NavigationManager.NavigateTo("");
     }
 
     private Task Validate()

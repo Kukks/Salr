@@ -46,7 +46,13 @@
 </MudContainer>
 
 @code {
-
+    public partial class PageLinks
+    {
+        public static string CreateKey()
+        {
+            return $"create-key";
+        }
+    }
     public bool ShowPrivateKeyField { get; set; }
 
 
