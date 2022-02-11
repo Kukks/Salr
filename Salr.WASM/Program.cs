@@ -32,5 +32,3 @@ namespace Salr.WASM
         }
     }
 }
-
-Program.cs(20, 40): [CS0246]  (are you missing a using directive or an assembly reference?)

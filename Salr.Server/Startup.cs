@@ -1,4 +1,3 @@
-using Blazor.Extensions;
 using Salr.UI.Services;
 using Salr.WebCommon;
 using Microsoft.AspNetCore.Builder;
