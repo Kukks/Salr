@@ -1,0 +1,119 @@
+﻿@page "/thread/{id}"
+@layout FullLayout
+@using NNostr.Client
+@inject Db _db
+@implements IAsyncDisposable
+
+
+<MudPaper id="unique_id_scroll_section"
+          Style="overflow: auto;height: calc(100vh - var(--mud-appbar-height) - 128px);">
+    @if (Events is null)
+    {
+        <MudSkeleton Animation="Animation.Wave"/>
+    }
+    else
+    {
+        <MudSpacer></MudSpacer>
+        <ChatThread Events="Events" AllowReply="false" NestedMode="false" ParentEvent="@Id"></ChatThread>
+    }
+
+    <MudScrollToTop TopOffset="64" Selector="#unique_id_scroll_section">
+        <MudFab Color="Color.Tertiary" Icon="@Icons.Filled.ArrowCircleUp"/>
+    </MudScrollToTop>
+</MudPaper>
+<style>
+    .chat-send-message, .chat-send-message .mud-toolbar.mud-toolbar-appbar, .chat-send-message .mud-toolbar.mud-toolbar-appbar form {
+        height: 128px;
+        
+    }
+</style>
+<MudAppBar Fixed="true" Bottom="true" DisableGutters="true" Class="chat-send-message pl-6">
+
+    <SendMessage OnSend="ConstructEvent"></SendMessage>
+</MudAppBar>
+
+@code
+{
+
+    [CascadingParameter]
+    public FullLayout Layout { get; set; }
+
+    public partial class PageLinks
+    {
+        public static string ThreadLink(string id)
+        {
+            return $"/thread/{id}";
+        }
+    }
+
+    [Inject]
+    public Db Db { get; set; }
+
+    [Parameter]
+    public string Id { get; set; }
+
+    public string[] Events { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Db.Threads.TryGetValue(Id, out var title);
+        Layout.Title = $"Thread {title ?? Id}";
+        await base.OnInitializedAsync();
+        _filters = SalrDataExtensions.GetThreadFilters(Id);
+        await Db.Subscribe("thread-toplevel", _filters);
+        Db.EventsReceived += EventsReceived;
+
+        Events = GetEvents();
+    }
+
+    private void EventsReceived(object? sender, (string subscriptionId, NostrEvent[] events, Uri known) e)
+    {
+        if (e.subscriptionId == "thread-toplevel")
+        {
+            Events = GetEvents();
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private string[] GetEvents()
+    {
+        return Db.Events.Values.Filter(false, _filters)
+            .OrderBy(e => e.CreatedAt)
+            .Select(e => e.Id)
+            .ToArray();
+    }
+
+    public async Task ConstructEvent(string message)
+    {
+        var evt = new NostrEvent()
+        {
+            Content = message,
+            CreatedAt = DateTimeOffset.UtcNow,
+            Kind = 1,
+            PublicKey = Db.PubKeyHex,
+            Tags = new List<NostrEventTag>()
+            {
+                new NostrEventTag()
+                {
+                    TagIdentifier = "e",
+                    Data = new List<string>()
+                    {
+                        Id
+                    }
+                }
+            }
+        };
+        evt.ComputeIdAndSign(Db.Key);
+        await Db.SendEvent(evt);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        Db.EventsReceived -= EventsReceived;
+        await Db.Unsubscribe("thread-toplevel");
+    }
+
+    private NostrSubscriptionFilter[] _filters;
+
+
+}

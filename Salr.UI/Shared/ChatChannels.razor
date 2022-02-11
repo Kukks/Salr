@@ -1,20 +1,73 @@
-﻿@inject Db _db
+﻿@using Salr.UI.Pages
+@using NNostr.Client
+@inject Db _db
+@implements IAsyncDisposable
+
+@code {
+
+
+    [Parameter]
+    public EventCallback<(string type, string channel)> OnChosen { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        _db.EventsReceived += EventsReceived;
+    }
+
+    private void EventsReceived(object? sender, (string subscriptionId, NostrEvent[] events, Uri known) e)
+    {
+        if (e.events.Any(e => e.Kind == 4))
+        {
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        _db.EventsReceived -= EventsReceived;
+        return ValueTask.CompletedTask;
+    }
+
+    public async Task ChooseDm(string item)
+    {
+        await OnChosen.InvokeAsync(("dm", item));
+    }
+
+    public async Task ChooseThread(string item)
+    {
+        await OnChosen.InvokeAsync(("thread", item));
+    }
+
+}
+
 @if (_db.NIP4Authors.Any())
 {
-    
-<MudList Clickable="true">
-    <MudListItem Text="Direct Messages" InitiallyExpanded="true" Dense="true" Class="mt-4">
-        <NestedList>
-            @foreach (var item in _db.NIP4Authors)
-            {
-                var text = (item == _db.PubKeyHex) ? "Myself" : item;
-                <MudListItem Dense="true" Href="@($"/dms/{item}")">
-                    @text
-                </MudListItem>
-            }
+    <MudList Clickable="true">
+        <MudListItem>
+            <MudButton Link="@Lonely.PageLinks.LonelyLink()">New Channel</MudButton>
+        </MudListItem>
+        <MudListItem Text="Direct Messages" InitiallyExpanded="true" Dense="true">
+            <NestedList>
+                @foreach (var item in _db.NIP4Authors)
+                {
+                    var text = (item == _db.PubKeyHex) ? "Myself" : item;
+                    <MudListItem Dense="true" OnClick="() => ChooseDm(item)">
+                        @text
+                    </MudListItem>
+                }
 
-        </NestedList>
-    </MudListItem>
-</MudList>
-
+            </NestedList>
+        </MudListItem>
+        <MudListItem Text="Followed Threads" InitiallyExpanded="true" Dense="true">
+            <NestedList>
+                @foreach (var item in _db.Threads)
+                {
+                    <MudListItem Dense="true" OnClick="() => ChooseThread(item.Key)">
+                        @item.Value
+                    </MudListItem>
+                }
+            </NestedList>
+        </MudListItem>
+    </MudList>
 }

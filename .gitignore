@@ -3,3 +3,4 @@ bin/
 obj/
 Hara.UI/node_modules
 /Hara.UI/wwwroot/ionic/
+.vs

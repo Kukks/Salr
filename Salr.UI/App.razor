@@ -1,6 +1,9 @@
+@inject Db  _db
+@inject ISnackbar  _snackbar
+@implements IDisposable
 <HostedServices></HostedServices>
 
-<MudThemeProvider/>
+<MudThemeProvider IsDarkMode="true"/>
 <MudDialogProvider/>
 <MudSnackbarProvider/>
 
@@ -18,3 +21,23 @@
         </Router>
     </MudMainContent>
 </MudLayout>
+
+@code{
+
+    protected override void OnInitialized()
+    {
+        _db.NoticeReceived += NoticeReceived;
+        base.OnInitialized();
+    }
+
+    private void NoticeReceived(object? sender, (string tuple, Uri known) e)
+    {
+        _snackbar.Add($"{e.known}: {e.tuple}", Severity.Warning);
+    }
+
+    public void Dispose()
+    {
+        _db.NoticeReceived -= NoticeReceived;
+    }
+
+}

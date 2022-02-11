@@ -6,13 +6,12 @@
         <WwwRootResourcePath>wwwroot</WwwRootResourcePath>
     </PropertyGroup>
 
-
     <ItemGroup>
-        <PackageReference Include="Blazor.Extensions.Notifications" Version="0.1.3" />
+        <ProjectReference Include="..\Salr.Abstractions\Salr.Abstractions.csproj" />
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\Salr.Abstractions\Salr.Abstractions.csproj" />
+      <Folder Include="wwwroot" />
     </ItemGroup>
 
 </Project>

@@ -1,0 +1,40 @@
+﻿@inherits LayoutComponentBase
+<CascadingValue Value="this">
+    <MudLayout>
+
+        <MudDrawer @bind-Open="_drawerOpen" Elevation="2">
+            <MudDrawerHeader>
+                <MudAvatar>@Db.PubKeyHex.Substring(0,3)</MudAvatar>
+            </MudDrawerHeader>
+            <ChatChannels></ChatChannels>
+            <MudDivider/>
+            <RelayList></RelayList>
+        </MudDrawer>
+        <MudMainContent Class="pt-0" >
+            <MudAppBar Elevation="1">
+                <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())"/>
+                <MudSpacer/>
+                @if (!string.IsNullOrEmpty(Title))
+                {
+                    <MudText>@Title</MudText>
+                    <MudSpacer/>
+                }
+            </MudAppBar>
+            @Body
+        </MudMainContent>
+    </MudLayout>
+</CascadingValue>
+
+@code {
+    [Inject]
+    public Db Db { get; set; }
+    bool _drawerOpen = true;
+
+    void DrawerToggle()
+    {
+        _drawerOpen = !_drawerOpen;
+    }
+
+    public string Title { get; set; }
+
+}

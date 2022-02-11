@@ -1,0 +1,27 @@
+﻿@using NNostr.Client
+@using Salr.UI.Pages
+<SendMessage OnSend="CreateAndSend"></SendMessage>
+@code {
+
+    [Inject]
+    public Db Db { get; set; }
+    [Inject]
+    public NavigationManager NavigationManager { get; set; }
+    private async Task CreateAndSend(string obj)
+    {
+        var evt = new NostrEvent()
+        {
+            Content = obj,
+            Kind = 1,
+            CreatedAt = DateTimeOffset.UtcNow,
+            PublicKey = Db.PubKeyHex,
+            Tags = new()
+        };
+
+        evt.ComputeIdAndSign(Db.Key);
+        await Db.SendEvent(evt);
+        Db.Threads.Add(evt.Id, evt.Content.Substring(0, Math.Min(evt.Content.Length, 10)));
+        NavigationManager.NavigateTo(ViewThread.PageLinks.ThreadLink(evt.Id));
+    }
+
+}

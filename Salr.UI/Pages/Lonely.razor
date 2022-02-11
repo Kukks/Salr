@@ -1,61 +1,45 @@
 ﻿@page "/Lonely"
-@using NNostr.Client
-@using NBitcoin.Secp256k1
-
+@using Microsoft.AspNetCore.WebUtilities
 <MudContainer Class="mt-16" MaxWidth="MaxWidth.Medium">
-    <MudText Typo="Typo.h3" Align="Align.Center" GutterBottom="true">New Direct Message</MudText>
-    <ValidationEditContext Model="this" @ref="_validationEditContext" Validate="Validate" OnValidSubmit="Submit">
-        <MudTextField
-            @bind-Value="PubKey"
-            HelperText="Public key"
-            Variant="Variant.Filled"
-            For="() => PubKey"/>
-        <MudErrorMessage For="() => PubKey"></MudErrorMessage>
-        <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto" Disabled="_validationEditContext.Invalid">Submit</MudButton>
-    </ValidationEditContext>
+    <MudText Typo="Typo.h3" Align="Align.Center" GutterBottom="true">New Direct Message or thread</MudText>
+    <GoToGenericChannel OnChosen="Callback"></GoToGenericChannel>
+    <MudText Typo="Typo.h3" Align="Align.Center" GutterBottom="true">New Thread</MudText>
+    <CreateNewThread></CreateNewThread>
+
+    <MudText>Your pubkey is @Db.PubKeyHex</MudText>
+    <ChatChannels OnChosen="Callback"></ChatChannels>
 </MudContainer>
 
 @code {
 
+
+    [Inject]
+    public Db Db { get; set; }
+
     [Inject]
     public NavigationManager NavigationManager { get; set; }
 
-    public string? PubKey { get; set; }
-
-
-    private void GoToDm()
+    public partial class PageLinks
     {
-        if (ECXOnlyPubKey.TryCreate(new ReadOnlySpan<byte>(PubKey.DecodHexData()), out var pubkey))
+        public static string LonelyLink()
         {
-            NavigationManager.NavigateTo($"/messages/{PubKey}");
+            return $"/lonely";
         }
     }
 
-    private ValidationEditContext _validationEditContext;
-    private ECXOnlyPubKey _parsedPubKey;
-
-    private void Submit()
+    private void Callback((string type, string channel) obj)
     {
-        NavigationManager.NavigateTo($"/messages/{PubKey}");
+        switch (obj.type)
+        {
+            case "dm":
+                NavigationManager.NavigateTo(ViewDirectMessages.PageLinks.DirectMessageLink(obj.channel));
+                break;
+            case "thread":
+                NavigationManager.NavigateTo(ViewThread.PageLinks.ThreadLink(obj.channel));
+                break;
+        }
     }
 
-    private Task Validate()
-    {
-        try
-        {
-            if (ECXOnlyPubKey.TryCreate(new ReadOnlySpan<byte>(PubKey.DecodHexData()), out _))
-            {
-            }
-            else
-            {
-                _validationEditContext.MessageStore.Add(() => PubKey, "The public key was in an invalid format");
-            }
-        }
-        catch (Exception e)
-        {
-            _validationEditContext.MessageStore.Add(() => PubKey, "The public key was in an invalid format");
-        }
-        return Task.CompletedTask;
-    }
+}
 
 }

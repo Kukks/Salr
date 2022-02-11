@@ -1,0 +1,64 @@
+﻿@using System.ComponentModel.DataAnnotations
+@if (ShowAdd)
+{
+    <ValidationEditContext Model="this" Validate="Validate" OnValidSubmit="AddNewRelay" @ref="_validationEditContext">
+
+
+        <MudTextField @bind-Value="NewRelay" For="() => NewRelay" HelperText="Relay Uri"></MudTextField>
+
+        <MudErrorMessage For="() => NewRelay"></MudErrorMessage>
+        <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto" Disabled="_validationEditContext.Invalid">Submit</MudButton>
+        <MudButton ButtonType="ButtonType.Button" Variant="Variant.Filled" Color="Color.Secondary" Class="ml-auto" OnClick="OnCancelClick">Cancel</MudButton>
+
+    </ValidationEditContext>
+}
+else
+{
+    <MudButton ButtonType="ButtonType.Button" Variant="Variant.Filled" Color="Color.Secondary" Class="ml-auto" OnClick="() => ShowAdd = true">Add new relay</MudButton>
+}
+
+@code {
+
+    private bool ShowAdd { get; set; } = false;
+
+    [Url]
+    [Required]
+    private string NewRelay { get; set; }
+
+    [Parameter]
+    public EventCallback<Uri> OnAddRelay { get; set; }
+
+    private async Task AddNewRelay()
+    {
+        await OnAddRelay.InvokeAsync(new Uri(NewRelay));
+        ShowAdd = false;
+        NewRelay = "";
+    }
+
+    private ValidationEditContext _validationEditContext;
+
+    private void OnCancelClick()
+    {
+        ShowAdd = false;
+        NewRelay = "";
+    }
+
+    private Task Validate()
+    {
+        if (string.IsNullOrEmpty(NewRelay))
+        {
+            _validationEditContext.MessageStore.Add(() => NewRelay, "Relay Url is required");
+        }
+        else if (Uri.TryCreate(NewRelay, UriKind.Absolute, out var result))
+        {
+            if (!result.Scheme.StartsWith("ws"))
+                _validationEditContext.MessageStore.Add(() => NewRelay, "Relay Url must use websocket scheme (ws or wss)");
+        }
+        else
+        {
+            _validationEditContext.MessageStore.Add(() => NewRelay, "Relay Url is not in a valid format");
+        }
+        return Task.CompletedTask;
+    }
+
+}

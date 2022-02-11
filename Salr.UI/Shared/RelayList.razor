@@ -1,0 +1,42 @@
+﻿@using System.ComponentModel.DataAnnotations
+<MudList Clickable="true">
+    <MudListItem Text="Relays" InitiallyExpanded="true" Dense="true">
+        <NestedList>
+    @foreach (var known in Db.KnownRelays)
+    {
+        var active = Db.ActiveRelays.TryGetValue(known, out var relay) ? "mud-selected-item" : string.Empty;
+        var icon = relay is not null ? Icons.Filled.OfflineBolt : null;
+        var iconColor = relay?.Status == Db.RelayStatus.Connected ? Color.Tertiary : Color.Error;
+        <MudListItem Text="@known.ToString()" Class="@active" Icon="@icon" IconColor="@iconColor" OnClick="() => Callback(known)"></MudListItem>
+    }
+
+        <MudListItem>
+            <AddRelay OnAddRelay="Callback"></AddRelay>
+        </MudListItem>
+        </NestedList>
+        </MudListItem>
+</MudList>
+
+
+@code {
+
+    [Inject]
+    public Db Db { get; set; }
+
+    [Parameter]
+    public EventCallback<Uri> OnRelayToggled { get; set; }
+
+    private async Task Callback(Uri obj)
+    {
+        await Db.ToggleRelay(obj);
+        await OnRelayToggled.InvokeAsync(obj);
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        Db.RelayStateChanged += (sender, args) => InvokeAsync(StateHasChanged);
+    }
+
+
+}

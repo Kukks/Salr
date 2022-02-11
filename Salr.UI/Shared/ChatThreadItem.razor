@@ -1,0 +1,199 @@
+﻿@using NNostr.Client
+@using System.Text.Json
+@using Salr.UI.Pages
+@implements IDisposable 
+@code {
+
+    [Inject]
+    public Db Db { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        Db.EventNoLongerPending += EventNoLongerPending;
+    }
+
+    private void EventNoLongerPending(object? sender, string e)
+    {
+        if (e == EventId)
+        {
+            InvokeAsync(StateHasChanged);
+        }
+    }
+
+
+    public bool Expanded
+    {
+        get => !ShadowDisableExpansion && _expanded;
+        set
+        {
+            if (!ShadowDisableExpansion)
+            {
+                _expanded = value;
+            }
+        }
+    }
+
+    [Parameter]
+    public string EventId
+    {
+        get => _eventId;
+        set
+        {
+            _eventId = value;
+            bool pending;
+            Event = Db.GetEvent(value, out pending);
+            Pending = pending;
+        }
+    }
+
+
+    public bool ShadowDisableExpansion => !NestedMode && !AllowReply;
+
+    [Parameter]
+    public string? ParentEvent { get; set; }
+
+    public bool Pending { get; set; }
+
+    [Parameter]
+    public string PreviousEventId { get; set; }
+
+    [Parameter]
+    public bool NestedMode { get; set; }
+
+    [Parameter]
+    public bool AllowReply { get; set; }
+
+    [Parameter]
+    public EventCallback<(string message, string parentEventId)> OnSendReply { get; set; }
+
+    [Parameter]
+    public int Depth { get; set; }
+
+    private NostrEvent Event { get; set; }
+
+    private string _eventId;
+    private bool _expanded;
+    public bool ShowRawJson { get; set; }
+
+    public void Dispose()
+    {
+        Db.EventNoLongerPending -= EventNoLongerPending;
+    }
+
+}
+
+<MudExpansionPanel @bind-IsExpanded="Expanded" HideIcon="ShadowDisableExpansion">
+    <TitleContent>
+        @if (Event is null)
+        {
+            <MudPaper>
+                <MudText>Event unavailable</MudText>
+            </MudPaper>
+        }
+        else
+        {
+            var prevEvent = PreviousEventId is null ? null : Db.GetEvent(PreviousEventId, out _);
+            var sameAuthor = prevEvent?.PublicKey == Event.PublicKey;
+
+            var withinSameTime = ((Event?.CreatedAt - prevEvent?.CreatedAt)?.TotalMinutes ?? 0) <= 5;
+
+            var contentEncrypted = Event.Kind == 4;
+            <MudGrid>
+                <MudItem xs="1">
+                    @if (!sameAuthor)
+                    {
+                        <MudAvatar >@Event.PublicKey.Substring(0, 3)</MudAvatar>
+                    }
+                </MudItem>
+                <MudItem xs="11">
+                    <MudGrid >
+                        @if (!sameAuthor || !withinSameTime)
+                        {
+                            <MudItem xs="12">
+                                <MudGrid Justify="Justify.SpaceBetween">
+
+                                    <MudItem Class="py-1">
+                                        @if (!sameAuthor)
+                                        {
+                                            @Event.PublicKey
+                                        }
+                                    </MudItem>
+                                    <MudItem Class="py-1">
+                                        @if (contentEncrypted)
+                                        {
+                                            <MudTooltip Text="E2E encrypted message" Color="Color.Primary" Placement="Placement.Bottom">
+                                                <MudIconButton Class="py-0" Icon="@Icons.Material.Filled.EnhancedEncryption" Color="Color.Success"></MudIconButton>
+                                            </MudTooltip>
+                                        }
+                                        @if (Pending)
+                                        {
+                                            <MudTooltip Text="Pending confirmation from at least 1 relay" Color="Color.Info" Placement="Placement.Bottom">
+                                                <MudIconButton Class="py-0" Icon="@Icons.Material.Filled.PendingActions" Color="Color.Info"></MudIconButton>
+                                            </MudTooltip>
+                                        }
+                                            <MudTooltip Text="Forward to DM/Thread" Color="Color.Info" Placement="Placement.Bottom">
+                                                <MudIconButton Link="@ForwardEvent.PageLinks.ForwardLink(EventId)" Class="py-0" Icon="@Icons.Material.Filled.Forward" Color="Color.Info"></MudIconButton>
+                                            </MudTooltip>
+                                        <MudIconButton Class="py-0" Icon="@Icons.Material.Filled.Adb" Color="Color.Info" OnClick="() => ShowRawJson = true"></MudIconButton>
+                                        @{
+                                            var options = new DialogOptions()
+                                            {
+                                                FullWidth = true,
+                                                CloseButton = true,
+                                                MaxWidth = MaxWidth.ExtraExtraLarge
+                                            };
+                                        }
+                                        <MudDialog @bind-IsVisible="ShowRawJson" Options="options">
+                                            <TitleContent>
+                                                <MudText Typo="Typo.h6" Class="pr-2" Style="word-wrap: break-word;">
+                                                    @EventId
+                                                </MudText>
+                                            </TitleContent>
+                                            <DialogContent>
+                                                @if (ShowRawJson)
+                                                {
+                                                    <pre style="white-space: break-spaces; word-break: break-word;">
+                                                    @JsonSerializer.Serialize(Event, new JsonSerializerOptions { WriteIndented = true })
+                                                </pre>
+                                                }
+                                            </DialogContent>
+                                        </MudDialog>
+                                    </MudItem>
+
+                                    <MudItem Class="py-1">@Event.CreatedAt.Value.ToString("g")</MudItem>
+                                </MudGrid>
+                            </MudItem>
+                        }
+                        <MudItem xs="12">
+                            @{
+                                var tagged = Event.GetTaggedData("e").Where(s => s != ParentEvent).ToArray();
+                                if (tagged.Any())
+                                {
+                                    foreach (var taggedEvent in tagged)
+                                    {
+                                        <ReferencedEvent Event="@taggedEvent"> </ReferencedEvent>
+                                    }
+                                }
+                            }
+
+                            <MudText>@Db.GetContent(Event)</MudText>
+                        </MudItem>
+                    </MudGrid>
+                </MudItem>
+            </MudGrid>
+        }
+
+
+    </TitleContent>
+    <ChildContent>
+        @if (NestedMode && Expanded && Db.ReplyToEvent.TryGetValue(EventId, out var replies))
+        {
+            <ChatThread Events="@replies.ToArray()" AllowReply="true" OnSendReply="OnSendReply" Depth="@(Depth + 1)" NestedMode="NestedMode" ParentEvent="@EventId"></ChatThread>
+        }
+        @if (AllowReply)
+        {
+            <SendMessage OnSend="s => OnSendReply.InvokeAsync((s,EventId))"></SendMessage>
+        }
+    </ChildContent>
+</MudExpansionPanel>

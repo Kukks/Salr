@@ -30,7 +30,6 @@ namespace Salr.Server
             services.AddServerSideBlazor();
 
             services.AddUIServices();
-            services.AddSingleton<ICounterState, CounterState>();
             services.AddSingleton<ILocalContentFetcher, FileProviderLocalContentFetcher>();
             services.AddScoped<IConfigProvider, JsInteropConfigProvider>();
             services.AddScoped<ISecureConfigProvider, JsInteropSecureConfigProvider>();
@@ -38,9 +37,7 @@ namespace Salr.Server
                 provider.GetRequiredService<IWebHostEnvironment>().WebRootFileProvider);
             services.AddMudServices();
 
-            services.AddScoped<INotificationManager, WebNotificationManager>();
             services.AddDataProtection();
-            services.AddNotifications();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

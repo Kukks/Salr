@@ -1,0 +1,44 @@
+﻿@using System.ComponentModel.DataAnnotations
+
+@code {
+
+    [Required]
+    public string? NewChatMessage { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnSend { get; set; }
+
+    private void OnSubmit()
+    {
+        OnSend.InvokeAsync(NewChatMessage);
+        NewChatMessage = null;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private ValidationEditContext _validationEditContext;
+
+    private async Task OnKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Code == "Enter" || e.Code == "NumpadEnter")
+        {
+            await _validationEditContext.Submit();
+        }
+    }
+
+}
+
+<ValidationEditContext Model="this" @ref="_validationEditContext" OnValidSubmit="OnSubmit" style="width: 100%">
+    <div class="d-flex">
+        <MudTextField @bind-Value="NewChatMessage"
+                      For="() => NewChatMessage"
+                      OnKeyPress="OnKeyPress"
+                      Placeholder="Enter your message..."
+                      Lines="3">
+        </MudTextField>
+        <MudIconButton ButtonType="ButtonType.Submit"
+                       
+                       Icon="@Icons.Material.Outlined.Send">
+        </MudIconButton>
+    </div>
+
+</ValidationEditContext>

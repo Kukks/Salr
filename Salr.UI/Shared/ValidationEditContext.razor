@@ -1,11 +1,14 @@
 ﻿@using System.Linq.Expressions
-<EditForm EditContext="EditContext" OnSubmit="OnSubmit">
+<EditForm EditContext="EditContext" OnSubmit="OnSubmit"  @attributes="@InputAttributes">
     <DataAnnotationsValidator/>
     @ChildContent
 </EditForm>
 
 @code {
 
+    [Parameter(CaptureUnmatchedValues = true)]
+    public Dictionary<string, object> InputAttributes { get; set; }
+    
     [Parameter]
     public object Model { get; set; }
 
@@ -53,8 +56,10 @@
 
     private async Task OnSubmit(EditContext obj)
     {
+        EditContext.Validate();
         if(Validate is not null)
             await Validate.Invoke();
+        
         if (EditContext.GetValidationMessages().Any())
         {
             await OnInvalidSubmit.InvokeAsync();
@@ -66,5 +71,10 @@
     }
 
     public bool Invalid => EditContext.GetValidationMessages().Any();
+
+    public async Task Submit()
+    {
+        await OnSubmit(EditContext);
+    }
 
 }

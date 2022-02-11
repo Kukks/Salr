@@ -1,0 +1,49 @@
+﻿@using NBitcoin.Secp256k1
+@using NNostr.Client
+@using Salr.UI.Pages
+   <ValidationEditContext Model="this" @ref="_validationEditContext" Validate="Validate" OnValidSubmit="Submit">
+        <MudTextField
+            @bind-Value="PubKey"
+            HelperText="Public key"
+            Variant="Variant.Filled"
+            For="() => PubKey"/>
+        <MudErrorMessage For="() => PubKey"></MudErrorMessage>
+        <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto" Disabled="_validationEditContext.Invalid">Submit</MudButton>
+    </ValidationEditContext>
+@code {
+    
+    [Inject]
+    public NavigationManager NavigationManager { get; set; }
+
+    public string? PubKey { get; set; }
+
+    [Inject]
+    public Db Db { get; set; }
+
+    private ValidationEditContext _validationEditContext;
+    private ECXOnlyPubKey _parsedPubKey;
+
+    private void Submit()
+    {
+        NavigationManager.NavigateTo(ViewDirectMessages.PageLinks.DirectMessageLink(PubKey));
+    }
+
+    private Task Validate()
+    {
+        try
+        {
+            if (ECXOnlyPubKey.TryCreate(new ReadOnlySpan<byte>(PubKey.DecodHexData()), out _))
+            {
+            }
+            else
+            {
+                _validationEditContext.MessageStore.Add(() => PubKey, "The public key was in an invalid format");
+            }
+        }
+        catch (Exception e)
+        {
+            _validationEditContext.MessageStore.Add(() => PubKey, "The public key was in an invalid format");
+        }
+        return Task.CompletedTask;
+    }
+}

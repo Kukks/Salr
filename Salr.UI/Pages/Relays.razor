@@ -1,60 +1,24 @@
 ﻿@page "/relays"
-@using System.Threading
 
 <MudContainer Class="mt-16" MaxWidth="MaxWidth.Medium">
-    <MudText Typo="Typo.h3" Align="Align.Center" GutterBottom="true">Create or import your key</MudText>
+    <MudText Typo="Typo.h3" Align="Align.Center" GutterBottom="true">Choose your relays</MudText>
     <ValidationEditContext Model="this" @ref="_validationEditContext" Validate="Validate" OnValidSubmit="Submit">
-        <MudList Clickable="true" >
-            @foreach (var known in Db.KnownRelays)
-            {
-                var active = Db.ActiveRelays.TryGetValue(known, out var relay) ? "mud-selected-item" : string.Empty;
-                var icon = relay is not null ? Icons.Filled.OfflineBolt : null;
-                var iconColor = relay?.Status == Db.RelayStatus.Connected ? Color.Tertiary : Color.Error;
-                <MudListItem  Text="@known.ToString()" Class="@active" Icon="@icon" IconColor="@iconColor" OnClick="() => ToggleRelay(known)"></MudListItem>
-            }
-        </MudList>
+        <RelayList OnRelayToggled="_ => _validationEditContext.NotifyFieldChanged(() => Db.ActiveRelays)"></RelayList>
         <MudErrorMessage For="() => Db.ActiveRelays"></MudErrorMessage>
-         <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto" Disabled="_validationEditContext.Invalid">Submit</MudButton>
+        <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto" Disabled="_validationEditContext.Invalid">Continue</MudButton>
     </ValidationEditContext>
-
 </MudContainer>
 
 @code {
-
-
     [Inject]
     private Db Db { get; set; }
 
     [Inject]
     private NavigationManager NavigationManager { get; set; }
 
-    private async Task ToggleRelay(Uri known)
-    {
-        if (Db.ActiveRelays.TryGetValue(known, out var activeRelay))
-        {
-            await activeRelay.Listener.StopAsync(CancellationToken.None);
-            activeRelay.Listener.Dispose();
-            Db.ActiveRelays.Remove(known);
-        }
-        else
-        {
-            Db.KnownRelays.Add(known);
-            var relay = new Db.ActiveRelay()
-            {
-                Status = Db.RelayStatus.Disconnected,
-                Listener = new NostrRelayListener(known, Db)
-            };
-            if (Db.ActiveRelays.TryAdd(known, relay))
-            {
-                await relay.Listener.StartAsync(CancellationToken.None);
-            }
-        }
-        _validationEditContext.NotifyFieldChanged(() => Db.ActiveRelays);
-    }
-
     private ValidationEditContext _validationEditContext;
 
-    
+
     private void Submit()
     {
         NavigationManager.NavigateTo("/");

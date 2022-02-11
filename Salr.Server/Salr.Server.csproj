@@ -9,8 +9,4 @@
       <ProjectReference Include="..\Salr.WebCommon\Salr.WebCommon.csproj" />
     </ItemGroup>
 
-    <ItemGroup>
-      <PackageReference Include="Blazor.Extensions.Notifications" Version="0.1.3" />
-    </ItemGroup>
-
 </Project>

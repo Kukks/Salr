@@ -5,24 +5,53 @@
 <MudContainer Class="mt-16" MaxWidth="MaxWidth.Medium">
     <MudText Typo="Typo.h3" Align="Align.Center" GutterBottom="true">Create or import your key</MudText>
     <ValidationEditContext Model="this" @ref="_validationEditContext" Validate="Validate" OnValidSubmit="Submit">
-        <MudTextField
-            @bind-Value="Key"
-            HelperText="Private key in hex format"
-            Variant="Variant.Filled"
-            AdornmentIcon="@Icons.Material.Filled.Create"
-            Adornment="Adornment.End"
-            OnAdornmentClick="GenerateKey"
-            For="() => Key"/>
-        <MudErrorMessage For="() => Key"></MudErrorMessage>
-        <MudTextField @bind-Value="PubKey" ReadOnly="true" HelperText="public key" Variant="Variant.Filled"/>
-         <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto"  Disabled="_validationEditContext.Invalid">Submit</MudButton>
+
+        @if (ShowPrivateKeyField)
+        {
+            <MudTextField
+                @bind-Value="Key"
+                HelperText="Private key in hex format"
+                Variant="Variant.Filled"
+                AdornmentIcon="@Icons.Material.Filled.Refresh"
+                Adornment="Adornment.End"
+                OnAdornmentClick="GenerateKey"
+                For="() => Key"/>
+            <MudErrorMessage For="() => Key"></MudErrorMessage>
+            @if (!string.IsNullOrEmpty(PubKey))
+            {
+                <MudText>
+                    Your pubkey is @PubKey
+                </MudText>
+            }
+
+            <MudGrid Justify="Justify.Center">
+                <MudItem>
+                    <MudButton Size="Size.Large" ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto" Disabled="_validationEditContext.Invalid">Submit</MudButton>
+
+                </MudItem>
+            </MudGrid>
+        }
+        else
+        {
+            <MudGrid Justify="Justify.Center">
+                <MudItem>
+                    <MudButton Size="Size.Large" Variant="Variant.Filled" Color="Color.Primary" OnClick="GenerateKey">Generate</MudButton>
+                    <MudButton Size="Size.Large" Variant="Variant.Filled" Color="Color.Secondary" OnClick="() => ShowPrivateKeyField = true">Import</MudButton>
+                </MudItem>
+            </MudGrid>
+        }
+
     </ValidationEditContext>
 
 </MudContainer>
 
 @code {
 
+    public bool ShowPrivateKeyField { get; set; }
+
+
     private ValidationEditContext _validationEditContext;
+    private string _key;
 
     [Inject]
     private Db Db { get; set; }
@@ -30,13 +59,22 @@
     [Inject]
     private NavigationManager NavigationManager { get; set; }
 
-    private string Key { get; set; }
+    private string Key
+    {
+        get => _key;
+        set
+        {
+            PubKey = null;
+            _key = value;
+        }
+    }
 
     public void GenerateKey()
     {
         if (!ECPrivKey.TryCreate(new ReadOnlySpan<byte>(RandomNumberGenerator.GetBytes(32)), out var key)) return;
-        Key = NostrExtensions.ToString(key);
-        PubKey = key.CreateXOnlyPubKey().ToBytes().ToHex();
+        Key = key.ToHex();
+        PubKey = key.CreateXOnlyPubKey().ToHex();
+        ShowPrivateKeyField = true;
     }
 
     public string PubKey { get; set; }
@@ -74,6 +112,7 @@
     private void Submit()
     {
         Db.Key = PrivKey;
+        Db.NIP4Authors.Add(Db.PubKeyHex);
         NavigationManager.NavigateTo("/");
     }
 

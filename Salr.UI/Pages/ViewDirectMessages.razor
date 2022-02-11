@@ -1,82 +1,94 @@
-﻿@page "/messages/{pubkey}"
+﻿@page "/dms/{pubkey}"
+@layout FullLayout
 @using NNostr.Client
 @inject Db _db
+@implements IAsyncDisposable
 
-<div class="d-flex flex-grow-1 flex-row">
-    <MudHidden Breakpoint="Breakpoint.SmAndDown">
-        <MudPaper Class="pa-3 mr-6" MinWidth="250px">
-            <MudButton EndIcon="@Icons.Material.Filled.Add" Color="Color.Secondary" FullWidth="true">Create</MudButton>
-            <ChatChannels/>
-        </MudPaper>
-    </MudHidden>
-    <MudPaper Class="py-4 flex-grow-1">
-        <MudToolBar Dense="true">
-            <MudHidden Breakpoint="Breakpoint.MdAndUp">
-                <MudIconButton OnClick="() => open = true" Icon="@Icons.Material.Outlined.Menu" Color="Color.Inherit" Class="mr-2 ml-n2"/>
-            </MudHidden>
-            <MudText Typo="Typo.h6">Chatting with @Pubkey</MudText>
-        </MudToolBar>
-        <div class="d-flex flex-column px-4">
 
-            @foreach (var e in Events)
-            {
-                if (_db.Events.TryGetValue(e, out var nostrEvent))
-                {
-                    var content = nostrEvent.Kind == 4 ? _db.DecryptedNIP4Content[e] : nostrEvent.Content;
 
-                    <div class="d-flex flex-row my-4">
-                        <div class="mr-4">
+<MudPaper id="unique_id_scroll_section"
+          Style="overflow: auto;height: calc(100vh - var(--mud-appbar-height) - 128px);">
+    @if (Events is null)
+    {
+        <MudSkeleton Animation="Animation.Wave"/>
+    }
+    else
+    {
+        <ChatThreadItem EventId="@Pubkey" AllowReply="false" Depth="0" NestedMode="false"></ChatThreadItem>
+        <MudSpacer></MudSpacer>
+        <ChatThread Events="Events" AllowReply="false" NestedMode="false" ParentEvent="@Pubkey"></ChatThread>
+    }
 
-                            <MudAvatar >@nostrEvent.PublicKey.Substring(0, 3)</MudAvatar>
+    <MudScrollToTop TopOffset="64" Selector="#unique_id_scroll_section">
+        <MudFab Color="Color.Tertiary" Icon="@Icons.Filled.ArrowCircleUp"/>
+    </MudScrollToTop>
+</MudPaper>
+<style>
+    .chat-send-message, .chat-send-message .mud-toolbar.mud-toolbar-appbar, .chat-send-message .mud-toolbar.mud-toolbar-appbar form {
+        height: 128px;
+        
+    }
+</style>
+<MudAppBar Fixed="true" Bottom="true" DisableGutters="true" Class="chat-send-message pl-6">
 
-                        </div>
-                        <div>
-                            <MudText Typo="Typo.body1">
-                                <b>@nostrEvent.PublicKey</b>
-                            </MudText>
-                            <MudText Typo="Typo.body2">@content</MudText>
-                        </div>
-                    </div>
-                }
-            }
-        </div>
-        <MudPaper Class="d-flex flex-row px-2 mx-4" Style="background-color: var(--mud-palette-background-grey);">
-            <MudTextField @bind-Value="NewChatMessage" Placeholder="Message #chat" DisableUnderLine="true" Class="mt-n2 mx-4" Lines="5"></MudTextField>
-            <MudIconButton Icon="@Icons.Material.Outlined.Send" Color="Color.Warning"></MudIconButton>
-        </MudPaper>
-    </MudPaper>
-</div>
-
-<MudDrawer @bind-Open="@open" Anchor="Anchor.Left" Elevation="1" Variant="@DrawerVariant.Temporary">
-    <MudButton EndIcon="@Icons.Material.Filled.Add" Color="Color.Secondary" Class="mx-4 mt-6 mb-4">Create DM</MudButton>
-    <ChatChannels/>
-</MudDrawer>
-
+    <SendMessage OnSend="s => ConstructEvent(s)"></SendMessage>
+</MudAppBar>
 @code
 {
+
+    [CascadingParameter]
+    public FullLayout Layout { get; set; }
+
+    public partial class PageLinks
+    {
+        public static string DirectMessageLink(string pubkey)
+        {
+            return $"/dms/{pubkey}";
+        }
+    }
+
     [Inject]
-    public Db Db { get; set; }    
-    
+    public Db Db { get; set; }
+
     [Parameter]
     public string Pubkey { get; set; }
 
     public string[] Events { get; set; }
 
+    public bool NestedMode { get; set; } = true;
     protected override async Task OnInitializedAsync()
     {
+        Layout.Title = $"Direct Message {Pubkey}";
         await base.OnInitializedAsync();
-        Events = _db.GetDirectMessageThread(Pubkey).ToArray();
+        _filters = SalrDataExtensions.GetDirectMessageThreadFilters(Pubkey);
+        await Db.Subscribe("direct-dm", _filters);
+        Db.EventsReceived += EventsReceived;
+
+        Events = GetEvents();
     }
 
-    bool open;
+    private void EventsReceived(object? sender, (string subscriptionId, NostrEvent[] events, Uri known) e)
+    {
+        if (e.subscriptionId == "direct-dm")
+        {
+            Events = GetEvents();
+            InvokeAsync(StateHasChanged);
+        }
+    }
 
-    public string? NewChatMessage { get; set; }
-
-    public async Task SendMessage()
+    private string[] GetEvents()
+    {
+        return Db.Events.Values.Filter(false, _filters)
+            .Where(e => !NestedMode || !e.GetTaggedEvents().Any())
+            .OrderBy(e => e.CreatedAt)
+            .Select(e => e.Id)
+            .ToArray();
+    }
+    public async Task ConstructEvent(string message, string replyTo = null)
     {
         var evt = new NostrEvent()
         {
-            Content = NewChatMessage,
+            Content = message,
             CreatedAt = DateTimeOffset.UtcNow,
             Kind = 4,
             PublicKey = Db.PubKeyHex,
@@ -92,8 +104,27 @@
                 }
             }
         };
-        evt.EncryptNip04Event(Db.Key);
-        evt.Id = evt.ComputeSignature(Db.Key);
-        Db.ProcessEvents(new []{evt});
+        if (replyTo is not null)
+        {
+            evt.Tags.Add(new NostrEventTag()
+            {
+                TagIdentifier = "e",
+                Data = new List<string>()
+                {
+                    replyTo
+                }
+            });
+        }
+        evt.ComputeIdAndSign(Db.Key);
+        await Db.SendEvent(evt);
     }
+
+    public async ValueTask DisposeAsync()
+    {
+        Db.EventsReceived -= EventsReceived;
+        await Db.Unsubscribe("direct-dm");
+    }
+
+    private NostrSubscriptionFilter[] _filters;
+
 }

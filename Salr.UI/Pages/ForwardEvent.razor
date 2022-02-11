@@ -1,0 +1,103 @@
+﻿@page "/forward/{event}"
+@using System.ComponentModel.DataAnnotations
+@using NNostr.Client
+
+<MudContainer Class="mt-16" MaxWidth="MaxWidth.Medium">
+    <ReferencedEvent Event="@Event"></ReferencedEvent>
+
+    <GoToGenericChannel OnChosen="Callback"></GoToGenericChannel>
+
+    <ChatChannels OnChosen="Callback"></ChatChannels>
+
+    <ValidationEditContext Model="this" @ref="_validationEditContext" OnValidSubmit="SendAndGo">
+
+        <MudErrorMessage For="() => Channel"></MudErrorMessage>
+        <MudErrorMessage For="() => Type"></MudErrorMessage>
+        <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto" Disabled="_validationEditContext.Invalid">Forward</MudButton>
+    </ValidationEditContext>
+
+</MudContainer>
+
+@code{
+
+    [Required]
+    public string Type { get; set; }
+
+    [Required]
+    public string Channel { get; set; }
+
+    [Inject]
+    public NavigationManager NavigationManager { get; set; }
+
+    [Inject]
+    public Db Db { get; set; }
+
+    [Parameter]
+    public string Event { get; set; }
+
+
+    private void Callback((string type, string channel) obj)
+    {
+        Type = obj.type;
+        Channel = obj.channel;
+    }
+
+    public static class PageLinks
+    {
+        public static string ForwardLink(string evt)
+        {
+            return $"/forward/{evt}";
+        }
+    }
+
+    private ValidationEditContext _validationEditContext;
+
+    private async Task SendAndGo()
+    {
+        var evt = new NostrEvent()
+        {
+            Tags = new List<NostrEventTag>(),
+            CreatedAt = DateTimeOffset.UtcNow,
+            PublicKey = Db.PubKeyHex,
+            Content = ""
+        };
+
+
+        switch (Type)
+        {
+            case "dm":
+                evt.Kind = 4;
+                evt.Tags.Add(new NostrEventTag()
+                {
+                    TagIdentifier = "p",
+                    Data = new() { Channel }
+                });
+                break;
+            case "thread":
+                evt.Kind = 1;
+                evt.Tags.Add(new NostrEventTag()
+                {
+                    TagIdentifier = "e",
+                    Data = new() { Channel }
+                });
+                break;
+        }
+        evt.Tags.Add(new NostrEventTag()
+        {
+            TagIdentifier = "e",
+            Data = new() { Event }
+        });
+        evt.ComputeIdAndSign(Db.Key);
+        await Db.SendEvent(evt);
+        switch (Type)
+        {
+            case "dm":
+                NavigationManager.NavigateTo(ViewDirectMessages.PageLinks.DirectMessageLink(Channel));
+                break;
+            case "thread":
+                NavigationManager.NavigateTo(ViewThread.PageLinks.ThreadLink(Channel));
+                break;
+        }
+    }
+
+}

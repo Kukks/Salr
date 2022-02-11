@@ -1,0 +1,50 @@
+﻿@using NNostr.Client
+<MudExpansionPanels MultiExpansion="true" Square="false" Elevation="Depth">
+
+    @for (var i = 0; i < Events.Length; i++)
+    {
+        <ChatThreadItem Depth="Depth"
+                        AllowReply="AllowReply"
+                        NestedMode="NestedMode"
+                        ParentEvent="@ParentEvent"
+                        EventId="@Events[i]"
+                        PreviousEventId="@(i == 0 ? null : Events[i-1])"
+                        OnSendReply="OnSendReply">
+        </ChatThreadItem>
+    }
+    
+</MudExpansionPanels>
+
+
+@code {
+
+
+    [Parameter]
+    public string? ParentEvent { get; set; }
+
+    public HashSet<string> Expanded { get; set; } = new();
+
+    [Inject]
+    public Db Db { get; set; }
+
+    [Parameter]
+    public string[] Events { get; set; }
+
+    [Parameter]
+    public int Depth { get; set; }
+
+    [Parameter]
+    public EventCallback<(string message, string parentEventId)> OnSendReply { get; set; }
+
+    [Parameter]
+    public bool AllowReply { get; set; }
+
+    [Parameter]
+    public bool NestedMode { get; set; } = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+    }
+
+}

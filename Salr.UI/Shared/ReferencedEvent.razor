@@ -1,0 +1,22 @@
+﻿@using Salr.UI.Pages
+<MudPaper Outlined="true" Square="false">
+    @{
+        var content = Db.GetContent(Event, out var taggedNostrEvent);
+
+    }
+    <MudText>@content</MudText>
+    @if (taggedNostrEvent?.Kind == 1)
+    {
+        <MudIconButton Icon="@Icons.Filled.OpenInNew" Link="@ViewThread.PageLinks.ThreadLink(Event)"></MudIconButton>
+    }
+</MudPaper>
+
+@code{
+
+    [Inject]
+    public Db Db { get; set; }
+
+    [Parameter]
+    public string Event { get; set; }
+
+}

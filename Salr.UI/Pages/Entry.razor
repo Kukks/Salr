@@ -18,13 +18,18 @@
         else if (Db.NIP4Authors.Any())
         {
             var lastDm = Db.DecryptedNIP4Content.LastOrDefault().Key;
-
+            if (string.IsNullOrEmpty(lastDm))
+            {
+                NavigationManager.NavigateTo(Lonely.PageLinks.LonelyLink());
+                return;
+            }
+            
             var lastDmAuthor = Db.PubKeyHex ==  Db.Events[lastDm].PublicKey ? Db.Events[lastDm].Tags.First(tag => tag.TagIdentifier == "p").Data.First() : Db.Events[lastDm].PublicKey;
-            NavigationManager.NavigateTo($"/messages/{lastDmAuthor}");
+            NavigationManager.NavigateTo(ViewDirectMessages.PageLinks.DirectMessageLink(lastDmAuthor));
         }
         else
         {
-            NavigationManager.NavigateTo("/lonely");
+            NavigationManager.NavigateTo(Lonely.PageLinks.LonelyLink());
         }
     }
 

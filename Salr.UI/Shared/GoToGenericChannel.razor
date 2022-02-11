@@ -1,0 +1,53 @@
+﻿@using NBitcoin.Secp256k1
+@using NNostr.Client
+@using Salr.UI.Pages
+<ValidationEditContext Model="this" @ref="_validationEditContext" Validate="Validate" OnValidSubmit="() => OnChosen.InvokeAsync((Type, Channel))">
+    <MudTextField
+        @bind-Value="Channel"
+        HelperText="Public key or Event id"
+        Variant="Variant.Filled"
+        For="() => Channel"/>
+    <MudErrorMessage For="() => Channel"></MudErrorMessage>
+    <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto" Disabled="_validationEditContext.Invalid">Submit</MudButton>
+</ValidationEditContext>
+
+@code {
+
+    public string? Channel { get; set; }
+    [Parameter]
+    public EventCallback<(string type, string channel)> OnChosen { get; set; }
+    [Inject]
+    public Db Db { get; set; }
+
+    private ValidationEditContext _validationEditContext;
+
+    public string Type { get; set; }
+
+    
+
+    private Task Validate()
+    {
+        try
+        {
+            var hex = Channel.DecodHexData();
+            if (ECXOnlyPubKey.TryCreate(new ReadOnlySpan<byte>(hex), out _))
+            {
+                Type = "dm";
+            }
+            else if (hex.Length == 32)
+            {
+                Type = "thread";
+            }
+            else
+            {
+                _validationEditContext.MessageStore.Add(() => Channel, "The public key was in an invalid format");
+            }
+        }
+        catch (Exception e)
+        {
+            _validationEditContext.MessageStore.Add(() => Channel, "The public key was in an invalid format");
+        }
+        return Task.CompletedTask;
+    }
+
+}

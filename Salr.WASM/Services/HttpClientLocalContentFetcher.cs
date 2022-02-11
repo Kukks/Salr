@@ -1,7 +1,6 @@
 using System.IO;
 using System.Net.Http;
 using System.Threading.Tasks;
-using Hara.Abstractions;
 using Salr.Abstractions.Contracts;
 
 namespace Salr.WASM.Services
