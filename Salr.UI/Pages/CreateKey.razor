@@ -119,7 +119,7 @@
     {
         Db.Key = PrivKey;
         Db.NIP4Authors.Add(Db.PubKeyHex);
-        NavigationManager.NavigateTo("/");
+        NavigationManager.NavigateTo(Entry.PageLinks.Entry());
     }
 
 }
