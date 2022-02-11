@@ -18,7 +18,6 @@
 
 
     <ItemGroup>
-      <ProjectReference Include="..\..\NNostr\NNostr.Client\NNostr.Client.csproj" />
       <ProjectReference Include="..\Salr.Abstractions\Salr.Abstractions.csproj" />
     </ItemGroup>
 
