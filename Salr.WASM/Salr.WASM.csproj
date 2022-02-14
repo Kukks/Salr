@@ -5,7 +5,7 @@
   
     </PropertyGroup>
     <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
-        <RunAOTCompilation>false</RunAOTCompilation>
+        <RunAOTCompilation>true</RunAOTCompilation>
     </PropertyGroup>
     <ItemGroup>
       <None Remove="WasmAES" />
