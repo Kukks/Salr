@@ -1,16 +1,16 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.0.0
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.32112.339
 MinimumVisualStudioVersion = 16.0.0.0
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Salr.UI", "Salr.UI\Salr.UI.csproj", "{AA178187-751C-4D38-B6BA-6312EEEF7DD3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Salr.UI", "Salr.UI\Salr.UI.csproj", "{AA178187-751C-4D38-B6BA-6312EEEF7DD3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Salr.Abstractions", "Salr.Abstractions\Salr.Abstractions.csproj", "{54720011-3BF0-4EEA-9B66-F5FEEBA46D49}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Salr.Abstractions", "Salr.Abstractions\Salr.Abstractions.csproj", "{54720011-3BF0-4EEA-9B66-F5FEEBA46D49}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Salr.WASM", "Salr.WASM\Salr.WASM.csproj", "{FB874D48-F7D9-483A-8422-AE77CD763AF7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Salr.WASM", "Salr.WASM\Salr.WASM.csproj", "{FB874D48-F7D9-483A-8422-AE77CD763AF7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Salr.Server", "Salr.Server\Salr.Server.csproj", "{D1420C5C-17A3-4FB7-8E54-84D5A1D81F8D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Salr.Server", "Salr.Server\Salr.Server.csproj", "{D1420C5C-17A3-4FB7-8E54-84D5A1D81F8D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Salr.WebCommon", "Salr.WebCommon\Salr.WebCommon.csproj", "{97A6DE65-79B7-453A-97CD-C3662BCE9AE0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Salr.WebCommon", "Salr.WebCommon\Salr.WebCommon.csproj", "{97A6DE65-79B7-453A-97CD-C3662BCE9AE0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

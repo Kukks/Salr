@@ -136,8 +136,16 @@
                 }
             });
         }
-        evt.ComputeIdAndSign(Db.Key);
-        await Db.SendEvent(evt);
+        try
+        {
+
+            await evt.ComputeIdAndSign(Db.Key);
+            await Db.SendEvent(evt);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+        }
         ReferencedEventId = null;
     }
 

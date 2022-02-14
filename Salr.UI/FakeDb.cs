@@ -1,13 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
-using MudBlazor;
+﻿using Microsoft.Extensions.Logging;
 using NBitcoin.Secp256k1;
 using NNostr.Client;
 using Relay;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Channels;
+using System.Threading.Tasks;
 
 namespace Salr.UI;
 
@@ -29,6 +29,7 @@ public class Db
     public MultiValueDictionary<string, string> ReplyToEvent { get; set; }= new();
     public Dictionary<string, string> ReferencedUserToEvent { get; set; }= new();
 
+    private readonly Channel<NostrEvent> PendingIncomingEvents = Channel.CreateUnbounded<NostrEvent>();
     public Dictionary<Uri,NostrRelayListener> ActiveRelays { get; set; } = new();
     public HashSet<Uri> KnownRelays { get; set; }= new()
     {
@@ -46,19 +47,17 @@ public class Db
     public Db(ILoggerFactory loggerFactory)
     {
         _loggerFactory = loggerFactory;
-    }
 
-    public void ProcessEvents(NostrEvent[] eEvents)
+        _ = ProcessChannel(PendingIncomingEvents, ProcessEvent);
+    }
+    
+
+    async Task<bool> ProcessEvent(NostrEvent e, CancellationToken cancellationToken)
     {
-        foreach (var nostrEvent in eEvents)
+        try
         {
-            ProcessEvent(nostrEvent);
-        }
-    }
 
-    void ProcessEvent(NostrEvent e)
-    {
-        if (!Events.TryAdd(e.Id, e)) return;
+        if (!Events.TryAdd(e.Id, e)) return true;
         if (UnseenEvents.Remove(e.Id))
         {
             EventNoLongerPending?.Invoke(this, e.Id);
@@ -76,15 +75,23 @@ public class Db
             if (e.PublicKey == PubKeyHex )
             {
                 NIP4Authors.Add(e.PublicKey);
-                DecryptedNIP4Content.TryAdd(e.Id, e.DecryptNip04Event(Key));
+                DecryptedNIP4Content.TryAdd(e.Id, await e.DecryptNip04Event(Key));
             }else if (taggedPubKey == PubKeyHex)
             {
                 NIP4Authors.Add(taggedPubKey);
-                DecryptedNIP4Content.TryAdd(e.Id, e.DecryptNip04Event(Key));
+                DecryptedNIP4Content.TryAdd(e.Id, await e.DecryptNip04Event(Key));
             }
         }
         if(taggedPubKey is not null)
             ReferencedUserToEvent.TryAdd(taggedPubKey,e.Id);
+        return true;
+
+        }
+        catch (Exception exception)
+        {
+            Console.WriteLine(exception);
+            return false;
+        }
     }
     
     
@@ -133,7 +140,10 @@ public class Db
 
         void EventsReceivedCore(object? sender, (string subscriptionId, NostrEvent[] events) e)
         {
-            ProcessEvents(e.events);
+            foreach (var nostrEvent in e.events)
+            {
+                PendingIncomingEvents.Writer.TryWrite(nostrEvent);
+            }
             EventsReceived.Invoke(sender, (e.subscriptionId, e.events, known));
         
         }
@@ -161,6 +171,24 @@ public class Db
             {
                 relay.Subscriptions = Subscriptions;
                 await relay.StartAsync(CancellationToken.None);
+            }
+        }
+    }
+
+
+    private async Task ProcessChannel<T>(Channel<T> channel, Func<T, CancellationToken, Task<bool>> processor,
+        CancellationToken cancellationToken = default)
+    {
+        while (await channel.Reader.WaitToReadAsync(cancellationToken))
+        {
+            if (channel.Reader.TryPeek(out var evt))
+            {
+                var linked = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                linked.CancelAfter(5000);
+                if (await processor(evt, linked.Token))
+                {
+                    channel.Reader.TryRead(out _);
+                }
             }
         }
     }

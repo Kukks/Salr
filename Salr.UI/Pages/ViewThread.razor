@@ -179,7 +179,7 @@
                 }
             });
         }
-        evt.ComputeIdAndSign(Db.Key);
+        await evt.ComputeIdAndSign(Db.Key);
         await Db.SendEvent(evt);
         ReferencedEventId = null;
     }

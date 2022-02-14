@@ -1,0 +1,43 @@
+@using NNostr.Client
+@using System.Text
+@code
+{
+    [Inject]
+    public IJSRuntime JsRuntime { get; set; }
+
+    protected override Task OnInitializedAsync()
+    {
+        NIP04.Encryptor = new WasmAESEncryptor(JsRuntime);
+        return base.OnInitializedAsync();
+    }
+    public class WasmAESEncryptor : IAesEncryptor
+    {
+        private readonly IJSRuntime _runtime;
+        public WasmAESEncryptor (IJSRuntime runtime)
+        {
+            _runtime = runtime;
+        }
+
+        public async Task<(string cipherText, string iv)> Encrypt(string plainText, byte[] key)
+        {
+            
+            var result =await _runtime.InvokeAsync<aescbcencryptresult>("aes_cbc_encrypt", Encoding.UTF8.GetBytes(plainText), key);
+
+            return ( Convert.ToBase64String(result.cipherText), Convert.ToBase64String(result.iv));
+        }
+
+        public class aescbcencryptresult
+        {
+            public byte[] iv{ get; set; }
+            public byte[] cipherText{ get; set; }
+        }
+
+        public async Task<string> Decrypt(string cipherText, string iv, byte[] key)
+        {
+            var result  =await _runtime.InvokeAsync<byte[]>("aes_cbc_decrypt", Convert.FromBase64String(cipherText), Convert.FromBase64String(iv), key);
+            return Encoding.UTF8.GetString(result);
+        }
+    }
+}
+
+

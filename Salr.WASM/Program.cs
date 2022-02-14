@@ -4,7 +4,9 @@ using System.Threading.Tasks;
 using Salr.WebCommon;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.JSInterop;
 using MudBlazor.Services;
+using NNostr.Client;
 using Salr.Abstractions.Contracts;
 using Salr.UI;
 using Salr.UI.Services;
@@ -18,13 +20,13 @@ namespace Salr.WASM
         {
             var builder = WebAssemblyHostBuilder.CreateDefault(args);
             builder.RootComponents.Add<App>("app");
+            builder.RootComponents.Add<WasmAES>("wasmaes");
 
             builder.Services.AddUIServices();
             builder.Services.AddSingleton<ILocalContentFetcher, HttpClientLocalContentFetcher>();
             builder.Services.AddSingleton<IConfigProvider, JsInteropConfigProvider>();
             builder.Services.AddSingleton<ISecureConfigProvider, PasswordEncryptedJsInteropSecureConfigProvider>();
             builder.Services.AddMudServices();
-
             builder.Services.AddSingleton(
                 sp => new HttpClient {BaseAddress = new Uri(builder.HostEnvironment.BaseAddress)});
 

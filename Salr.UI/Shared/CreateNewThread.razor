@@ -21,7 +21,7 @@
             Tags = new()
         };
 
-        evt.ComputeIdAndSign(Db.Key);
+        await evt.ComputeIdAndSign(Db.Key);
         await Db.SendEvent(evt);
         Db.Threads.Add(evt.Id, evt.Content.Substring(0, Math.Min(evt.Content.Length, 10)));
         NavigationManager.NavigateTo(ViewThread.PageLinks.ThreadLink(evt.Id));
