@@ -9,6 +9,10 @@
     {
         <MudIconButton Icon="@Icons.Filled.OpenInNew" Link="@ViewThread.PageLinks.ThreadLink(Event)"></MudIconButton>
     }
+    @if (AllowClear)
+    {
+        <MudIconButton Icon="@Icons.Filled.Clear" OnClick="OnClear"></MudIconButton>
+    }
 </MudPaper>
 
 @code{
@@ -18,5 +22,11 @@
 
     [Parameter]
     public string Event { get; set; }
+
+    [Parameter]
+    public bool AllowClear { get; set; }
+
+    [Parameter]
+    public EventCallback OnClear { get; set; }
 
 }

@@ -1,5 +1,5 @@
 ﻿@using NNostr.Client
-<MudExpansionPanels MultiExpansion="true" Square="false" Elevation="Depth">
+<MudExpansionPanels MultiExpansion="false" Square="false" Elevation="Depth">
 
     @for (var i = 0; i < Events.Length; i++)
     {
@@ -9,7 +9,10 @@
                         ParentEvent="@ParentEvent"
                         EventId="@Events[i]"
                         PreviousEventId="@(i == 0 ? null : Events[i-1])"
-                        OnSendReply="OnSendReply">
+                        OnInlineReply="OnInlineReply"
+                        InlineReply="InlineReply"
+                        OnReply="OnReply"
+                        >
         </ChatThreadItem>
     }
     
@@ -34,10 +37,15 @@
     public int Depth { get; set; }
 
     [Parameter]
-    public EventCallback<(string message, string parentEventId)> OnSendReply { get; set; }
+    public EventCallback<(string message, string parentEventId)> OnInlineReply { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnReply { get; set; }
 
     [Parameter]
     public bool AllowReply { get; set; }
+    [Parameter]
+    public bool InlineReply { get; set; }
 
     [Parameter]
     public bool NestedMode { get; set; } = true;

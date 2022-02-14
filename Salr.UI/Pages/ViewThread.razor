@@ -1,9 +1,22 @@
 ﻿@page "/thread/{id}"
 @layout FullLayout
-@using NNostr.Client
 @inject Db _db
+@using NNostr.Client
 @implements IAsyncDisposable
-
+<MudAppBar Elevation="1">
+    <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@(_ => Layout.DrawerToggle())"/>
+    <MudSpacer/>
+    @if (!string.IsNullOrEmpty(Title))
+    {
+        <MudText>@Title</MudText>
+        <MudSpacer/>
+    }
+    <MudToggleIconButton Toggled="@SavedThread"
+                         Edge="Edge.End"
+                         ToggledChanged="ToggleSave"
+                         Icon="@Icons.Material.Filled.AlarmOff" Color="@Color.Info" Title="Follow"
+                         ToggledIcon="@Icons.Material.Filled.AlarmOn" ToggledColor="@Color.Success" ToggledTitle="Unsave"/>
+</MudAppBar>
 
 <MudPaper id="unique_id_scroll_section"
           Style="overflow: auto;height: calc(100vh - var(--mud-appbar-height) - 128px);">
@@ -14,7 +27,8 @@
     else
     {
         <MudSpacer></MudSpacer>
-        <ChatThread Events="Events" AllowReply="false" NestedMode="false" ParentEvent="@Id"></ChatThread>
+        <ChatThread Events="Events" AllowReply="true" NestedMode="false" ParentEvent="@Id" 
+            OnReply="s => ReferencedEventId = s"></ChatThread>
     }
 
     <MudScrollToTop TopOffset="64" Selector="#unique_id_scroll_section">
@@ -22,15 +36,31 @@
     </MudScrollToTop>
 </MudPaper>
 <style>
-    .chat-send-message, .chat-send-message .mud-toolbar.mud-toolbar-appbar, .chat-send-message .mud-toolbar.mud-toolbar-appbar form {
-        height: 128px;
+
+.chat-send-message, .chat-send-message .mud-toolbar.mud-toolbar-appbar{
+    @if (ReferencedEventId is not null)
+    {
+        @("height: 210px;")
+        
+    }
+    else
+    {
+        @("height: 128px;")
+    }
+        
+    }
+
+     .chat-send-message .mud-toolbar.mud-toolbar-appbar form {
+    height: 128px;
+    
         
     }
 </style>
-<MudAppBar Fixed="true" Bottom="true" DisableGutters="true" Class="chat-send-message pl-6">
+<MudAppBar Fixed="true" Bottom="true" DisableGutters="true" Class="chat-send-message">
 
-    <SendMessage OnSend="ConstructEvent"></SendMessage>
+    <SendMessage OnSend="ConstructEvent"  @bind-ReferencedEvent="@ReferencedEventId"></SendMessage>
 </MudAppBar>
+
 
 @code
 {
@@ -38,7 +68,7 @@
     [CascadingParameter]
     public FullLayout Layout { get; set; }
 
-    public partial class PageLinks
+    public class PageLinks
     {
         public static string ThreadLink(string id)
         {
@@ -56,8 +86,17 @@
 
     protected override async Task OnInitializedAsync()
     {
-        Db.Threads.TryGetValue(Id, out var title);
-        Layout.Title = $"Thread {title ?? Id}";
+        if (Db.Threads.TryGetValue(Id, out var title))
+        {
+            SavedThread = true;
+            Title = title;
+        }
+        else
+        {
+            SavedThread = false;
+            Title = Id;
+        }
+        ;
         await base.OnInitializedAsync();
         _filters = SalrDataExtensions.GetThreadFilters(Id);
         await Db.Subscribe("thread-toplevel", _filters);
@@ -66,10 +105,36 @@
         Events = GetEvents();
     }
 
+    public bool SavedThread { get; set; }
+
+    public async Task ToggleSave(bool val)
+    {
+        if (!val)
+        {
+            Db.Threads.Remove(Id);
+            SavedThread = false;
+        }
+        else
+        {
+            Db.Threads.TryAdd(Id, Title);
+            SavedThread = true;
+        }
+        
+    }
+
+    public string Title { get; set; }
+
     private void EventsReceived(object? sender, (string subscriptionId, NostrEvent[] events, Uri known) e)
     {
         if (e.subscriptionId == "thread-toplevel")
         {
+            var mainEvent = e.events.FirstOrDefault(evt => evt.Id == Id);
+            if (mainEvent is not null)
+            {
+                Title = mainEvent.Content;
+            }
+            
+            
             Events = GetEvents();
             InvokeAsync(StateHasChanged);
         }
@@ -85,26 +150,38 @@
 
     public async Task ConstructEvent(string message)
     {
-        var evt = new NostrEvent()
+        var evt = new NostrEvent
         {
             Content = message,
             CreatedAt = DateTimeOffset.UtcNow,
             Kind = 1,
             PublicKey = Db.PubKeyHex,
-            Tags = new List<NostrEventTag>()
+            Tags = new List<NostrEventTag>
             {
-                new NostrEventTag()
+                new NostrEventTag
                 {
                     TagIdentifier = "e",
-                    Data = new List<string>()
+                    Data = new List<string>
                     {
                         Id
                     }
                 }
             }
         };
+        if (ReferencedEventId is not null)
+        {
+            evt.Tags.Add( new NostrEventTag
+            {
+                TagIdentifier = "e",
+                Data = new List<string>
+                {
+                    ReferencedEventId
+                }
+            });
+        }
         evt.ComputeIdAndSign(Db.Key);
         await Db.SendEvent(evt);
+        ReferencedEventId = null;
     }
 
     public async ValueTask DisposeAsync()
@@ -116,4 +193,5 @@
     private NostrSubscriptionFilter[] _filters;
 
 
+    public string? ReferencedEventId { get; set; }
 }

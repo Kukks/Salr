@@ -1,7 +1,9 @@
 ﻿@using NNostr.Client
 @using System.Text.Json
 @using Salr.UI.Pages
-@implements IDisposable 
+@implements IDisposable
+
+
 @code {
 
     [Inject]
@@ -11,6 +13,16 @@
     {
         await base.OnInitializedAsync();
         Db.EventNoLongerPending += EventNoLongerPending;
+        Db.EventsReceived += EventsReceived;
+    }
+
+    private void EventsReceived(object? sender, (string subscriptionId, NostrEvent[] events, Uri known) e)
+    {
+        if (NestedMode && e.events.Any(evt => evt.GetTaggedEvents().Contains(EventId)))
+        {
+            GetReplies();
+            InvokeAsync(StateHasChanged);
+        }
     }
 
     private void EventNoLongerPending(object? sender, string e)
@@ -22,6 +34,12 @@
     }
 
 
+    public void GetReplies()
+    {
+        Db.ReplyToEvent.TryGetValue(EventId, out var replies);
+        _replies = replies?.ToArray() ?? Array.Empty<string>();
+    }
+
     public bool Expanded
     {
         get => !ShadowDisableExpansion && _expanded;
@@ -30,6 +48,10 @@
             if (!ShadowDisableExpansion)
             {
                 _expanded = value;
+            }
+            if (value)
+            {
+                InvokeAsync(StateHasChanged);
             }
         }
     }
@@ -44,11 +66,12 @@
             bool pending;
             Event = Db.GetEvent(value, out pending);
             Pending = pending;
+            GetReplies();
         }
     }
 
 
-    public bool ShadowDisableExpansion => !NestedMode && !AllowReply;
+    public bool ShadowDisableExpansion => !NestedMode && !InlineReply && !_replies.Any();
 
     [Parameter]
     public string? ParentEvent { get; set; }
@@ -65,7 +88,13 @@
     public bool AllowReply { get; set; }
 
     [Parameter]
-    public EventCallback<(string message, string parentEventId)> OnSendReply { get; set; }
+    public bool InlineReply { get; set; }
+
+    [Parameter]
+    public EventCallback<(string message, string parentEventId)> OnInlineReply { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnReply { get; set; }
 
     [Parameter]
     public int Depth { get; set; }
@@ -74,11 +103,20 @@
 
     private string _eventId;
     private bool _expanded;
+    private string[] _replies;
     public bool ShowRawJson { get; set; }
 
     public void Dispose()
     {
         Db.EventNoLongerPending -= EventNoLongerPending;
+        Db.EventsReceived -= EventsReceived;
+    }
+
+
+    private void OnReplyClick()
+    {
+        Expanded = true;
+        OnReply.InvokeAsync(EventId);
     }
 
 }
@@ -108,12 +146,12 @@
                 </MudItem>
                 <MudItem xs="11">
                     <MudGrid >
-                        @if (!sameAuthor || !withinSameTime)
+                        @if (true || !sameAuthor || !withinSameTime)
                         {
                             <MudItem xs="12">
-                                <MudGrid Justify="Justify.SpaceBetween">
+                                <MudGrid >
 
-                                    <MudItem Class="py-1">
+                                    <MudItem Class="py-1" xs="6">
                                         @if (!sameAuthor)
                                         {
                                             @Event.PublicKey
@@ -132,9 +170,15 @@
                                                 <MudIconButton Class="py-0" Icon="@Icons.Material.Filled.PendingActions" Color="Color.Info"></MudIconButton>
                                             </MudTooltip>
                                         }
-                                            <MudTooltip Text="Forward to DM/Thread" Color="Color.Info" Placement="Placement.Bottom">
-                                                <MudIconButton Link="@ForwardEvent.PageLinks.ForwardLink(EventId)" Class="py-0" Icon="@Icons.Material.Filled.Forward" Color="Color.Info"></MudIconButton>
+                                        <MudTooltip Text="Forward to DM/Thread" Color="Color.Info" Placement="Placement.Bottom">
+                                            <MudIconButton Link="@ForwardEvent.PageLinks.ForwardLink(EventId)" Class="py-0" Icon="@Icons.Material.Filled.Forward" Color="Color.Info"></MudIconButton>
+                                        </MudTooltip>
+                                        @if (!InlineReply && AllowReply)
+                                        {
+                                            <MudTooltip Text="Reply" Color="Color.Info" Placement="Placement.Bottom">
+                                                <MudIconButton OnClick="OnReplyClick" Class="py-0" Icon="@Icons.Material.Filled.Reply" Color="Color.Info"></MudIconButton>
                                             </MudTooltip>
+                                        }
                                         <MudIconButton Class="py-0" Icon="@Icons.Material.Filled.Adb" Color="Color.Info" OnClick="() => ShowRawJson = true"></MudIconButton>
                                         @{
                                             var options = new DialogOptions()
@@ -187,13 +231,17 @@
 
     </TitleContent>
     <ChildContent>
-        @if (NestedMode && Expanded && Db.ReplyToEvent.TryGetValue(EventId, out var replies))
+        @if (NestedMode && Expanded && _replies.Any())
         {
-            <ChatThread Events="@replies.ToArray()" AllowReply="true" OnSendReply="OnSendReply" Depth="@(Depth + 1)" NestedMode="NestedMode" ParentEvent="@EventId"></ChatThread>
+            <MudPaper>
+                <ChatThread
+                    OnReply="OnReply"
+                    Events="@_replies" AllowReply="true" OnInlineReply="OnInlineReply" Depth="@(Depth + 1)" NestedMode="NestedMode" ParentEvent="@EventId"></ChatThread>
+            </MudPaper>
         }
-        @if (AllowReply)
+        @if (AllowReply && Expanded && InlineReply)
         {
-            <SendMessage OnSend="s => OnSendReply.InvokeAsync((s,EventId))"></SendMessage>
+            <SendMessage OnSend="s => OnInlineReply.InvokeAsync((s,EventId))"></SendMessage>
         }
     </ChildContent>
 </MudExpansionPanel>

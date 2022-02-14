@@ -4,12 +4,16 @@
 <ValidationEditContext Model="this" @ref="_validationEditContext" Validate="Validate" OnValidSubmit="() => OnChosen.InvokeAsync((Type, Channel))">
     <MudTextField
         @bind-Value="Channel"
-        HelperText="Public key or Event id"
+        HelperText="Send a DM or go to an existing thread"
         Variant="Variant.Filled"
-        For="() => Channel"/>
+        For="() => Channel"
+        
+        Placeholder="Public key or event id"
+        Adornment="Adornment.End"
+        OnAdornmentClick="_validationEditContext.Submit"
+        AdornmentIcon="@Icons.Filled.Send"/>
     <MudErrorMessage For="() => Channel"></MudErrorMessage>
-    <MudButton ButtonType="ButtonType.Submit" Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto" Disabled="_validationEditContext.Invalid">Submit</MudButton>
-</ValidationEditContext>
+   </ValidationEditContext>
 
 @code {
 

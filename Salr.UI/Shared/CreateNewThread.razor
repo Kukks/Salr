@@ -1,12 +1,15 @@
 ﻿@using NNostr.Client
 @using Salr.UI.Pages
 <SendMessage OnSend="CreateAndSend"></SendMessage>
+
 @code {
 
     [Inject]
     public Db Db { get; set; }
+
     [Inject]
     public NavigationManager NavigationManager { get; set; }
+
     private async Task CreateAndSend(string obj)
     {
         var evt = new NostrEvent()

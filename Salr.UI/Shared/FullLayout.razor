@@ -1,40 +1,81 @@
-﻿@inherits LayoutComponentBase
+﻿@using Salr.UI.Pages
+@inherits LayoutComponentBase
+@implements IDisposable
 <CascadingValue Value="this">
     <MudLayout>
 
-        <MudDrawer @bind-Open="_drawerOpen" Elevation="2">
+        <MudDrawer @bind-Open="DrawerOpen" Elevation="2">
             <MudDrawerHeader>
-                <MudAvatar>@Db.PubKeyHex.Substring(0,3)</MudAvatar>
+                <MudAvatar>@Db.PubKeyHex.Substring(0, 3)</MudAvatar>
             </MudDrawerHeader>
-            <ChatChannels></ChatChannels>
+            <MudListItem>
+                <MudButton Link="@Lonely.PageLinks.LonelyLink()">New Channel</MudButton>
+            </MudListItem>
+            <ChatChannels OnChosen="Callback" Id="@CurrentChannel"></ChatChannels>
             <MudDivider/>
             <RelayList></RelayList>
         </MudDrawer>
-        <MudMainContent Class="pt-0" >
-            <MudAppBar Elevation="1">
-                <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@((e) => DrawerToggle())"/>
-                <MudSpacer/>
-                @if (!string.IsNullOrEmpty(Title))
-                {
-                    <MudText>@Title</MudText>
-                    <MudSpacer/>
-                }
-            </MudAppBar>
+        <MudMainContent Class="pt-0">
+
             @Body
         </MudMainContent>
     </MudLayout>
 </CascadingValue>
 
 @code {
+
     [Inject]
     public Db Db { get; set; }
-    bool _drawerOpen = true;
 
-    void DrawerToggle()
+    [Inject]
+    public NavigationManager NavigationManager { get; set; }
+
+    public bool DrawerOpen { get; set; } = true;
+
+    public string CurrentChannel { get; set; }
+
+    protected override async Task OnInitializedAsync()
     {
-        _drawerOpen = !_drawerOpen;
+        if (Db.Key is null)
+        {
+            NavigationManager.NavigateTo(CreateKey.PageLinks.CreateKey(), true);
+        }
+        await base.OnInitializedAsync();
+        NavigationManager.LocationChanged += NavigationManagerOnLocationChanged;
     }
 
-    public string Title { get; set; }
+    private void NavigationManagerOnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        if (Db.Key is null)
+        {
+            NavigationManager.NavigateTo(CreateKey.PageLinks.CreateKey(), true);
+        }
+    }
+
+    public void DrawerToggle()
+    {
+        Console.WriteLine("wertyuiol");
+        DrawerOpen = !DrawerOpen;
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        NavigationManager.LocationChanged -= NavigationManagerOnLocationChanged;
+    }
+
+    private void Callback((string type, string channel) obj)
+    {
+        CurrentChannel = obj.channel;
+        switch (obj.type)
+        {
+            case "dm":
+                NavigationManager.NavigateTo(ViewDirectMessages.PageLinks.DirectMessageLink(obj.channel));
+                break;
+            case "thread":
+                NavigationManager.NavigateTo(ViewThread.PageLinks.ThreadLink(obj.channel));
+                break;
+        }
+    }
 
 }

@@ -4,7 +4,15 @@
 @inject Db _db
 @implements IAsyncDisposable
 
-
+<MudAppBar Elevation="1">
+    <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" OnClick="@(_ => Layout.DrawerToggle())"/>
+    <MudSpacer/>
+    @if (!string.IsNullOrEmpty(Title))
+    {
+        <MudText>@Title</MudText>
+        <MudSpacer/>
+    }
+</MudAppBar>
 
 <MudPaper id="unique_id_scroll_section"
           Style="overflow: auto;height: calc(100vh - var(--mud-appbar-height) - 128px);">
@@ -14,7 +22,11 @@
     }
     else
     {
-        <ChatThread Events="Events" AllowReply="true" NestedMode="true" OnSendReply="tuple => ConstructEvent(tuple.message, tuple.parentEventId)"></ChatThread>
+        <ChatThread 
+            Events="Events" 
+            InlineReply="false"
+            OnReply="s => ReferencedEventId = s"
+            AllowReply="true" NestedMode="NestedMode" OnInlineReply="tuple => ConstructEvent(tuple.message, tuple.parentEventId)"></ChatThread>
     }
 
     <MudScrollToTop TopOffset="64" Selector="#unique_id_scroll_section">
@@ -27,9 +39,9 @@
         
     }
 </style>
-<MudAppBar Fixed="true" Bottom="true" DisableGutters="true" Class="chat-send-message pl-6">
+<MudAppBar Fixed="true" Bottom="true" DisableGutters="true" Class="chat-send-message">
 
-    <SendMessage OnSend="s => ConstructEvent(s)"></SendMessage>
+    <SendMessage OnSend="s => ConstructEvent(s)" @bind-ReferencedEvent="@ReferencedEventId"></SendMessage>
 </MudAppBar>
 @code
 {
@@ -56,7 +68,7 @@
     public bool NestedMode { get; set; } = true;
     protected override async Task OnInitializedAsync()
     {
-        Layout.Title = $"Direct Message {Pubkey}";
+        Title = $"Direct Message {Pubkey}";
         await base.OnInitializedAsync();
         _filters = SalrDataExtensions.GetDirectMessageThreadFilters(Pubkey);
         await Db.Subscribe("direct-dm", _filters);
@@ -64,6 +76,9 @@
 
         Events = GetEvents();
     }
+
+    public string Title { get; set; }
+    public string ReferencedEventId { get; set; }
 
     private void EventsReceived(object? sender, (string subscriptionId, NostrEvent[] events, Uri known) e)
     {
@@ -76,11 +91,18 @@
 
     private string[] GetEvents()
     {
-        return Db.Events.Values.Filter(false, _filters)
-            .Where(e => !NestedMode || !e.GetTaggedEvents().Any())
-            .OrderBy(e => e.CreatedAt)
-            .Select(e => e.Id)
+        var res = Db.Events.Values.Filter(false, _filters)
+            .Where(e => !NestedMode || !Db.DecryptedNIP4Content.ContainsKey(e.GetTaggedEvents().FirstOrDefault() ?? string.Empty))
+            .OrderBy(e => e.CreatedAt);
+
+        foreach (var nostrEvent in res)
+        {
+            Console.WriteLine(nostrEvent.GetTaggedEvents().FirstOrDefault());
+        }
+        
+        return res.Select(e => e.Id)
             .ToArray();
+
     }
     public async Task ConstructEvent(string message, string replyTo = null)
     {
@@ -102,6 +124,7 @@
                 }
             }
         };
+        replyTo ??= ReferencedEventId;
         if (replyTo is not null)
         {
             evt.Tags.Add(new NostrEventTag()
@@ -115,6 +138,7 @@
         }
         evt.ComputeIdAndSign(Db.Key);
         await Db.SendEvent(evt);
+        ReferencedEventId = null;
     }
 
     public async ValueTask DisposeAsync()

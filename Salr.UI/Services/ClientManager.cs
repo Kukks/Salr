@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -111,6 +112,8 @@ public class NostrRelayListener : IHostedService
 
     public async Task SendEvent(NostrEvent evt)
     {
+        
+        _logger.LogInformation($"Sending evt to relay {_uri} : {JsonSerializer.Serialize(evt)} ");
         await _nostrClient.PublishEvent(evt, _ct);
     }
 }

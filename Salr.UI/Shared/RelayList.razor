@@ -5,8 +5,8 @@
     @foreach (var known in Db.KnownRelays)
     {
         var active = Db.ActiveRelays.TryGetValue(known, out var relay) ? "mud-selected-item" : string.Empty;
-        var icon = relay is not null ? Icons.Filled.OfflineBolt : null;
-        var iconColor = relay?.Status == Db.RelayStatus.Connected ? Color.Tertiary : Color.Error;
+        var icon = Icons.Filled.OfflineBolt;
+        var iconColor = relay is null? Color.Info: relay?.Status == Db.RelayStatus.Connected ? Color.Tertiary : Color.Error;
         <MudListItem Text="@known.ToString()" Class="@active" Icon="@icon" IconColor="@iconColor" OnClick="() => Callback(known)"></MudListItem>
     }
 

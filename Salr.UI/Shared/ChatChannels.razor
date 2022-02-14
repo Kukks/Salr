@@ -9,11 +9,15 @@
     [Parameter]
     public EventCallback<(string type, string channel)> OnChosen { get; set; }
 
+    [Parameter]
+    public string Id { get; set; }
+
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
         _db.EventsReceived += EventsReceived;
     }
+
 
     private void EventsReceived(object? sender, (string subscriptionId, NostrEvent[] events, Uri known) e)
     {
@@ -39,35 +43,40 @@
         await OnChosen.InvokeAsync(("thread", item));
     }
 
+    [Inject]
+    public NavigationManager NavigationManager { get; set; }
+
 }
 
-@if (_db.NIP4Authors.Any())
-{
-    <MudList Clickable="true">
-        <MudListItem>
-            <MudButton Link="@Lonely.PageLinks.LonelyLink()">New Channel</MudButton>
-        </MudListItem>
+<MudList Clickable="true" SelectedValue="@Id">
+
+
+    @if (_db.NIP4Authors.Any())
+    {
         <MudListItem Text="Direct Messages" InitiallyExpanded="true" Dense="true">
             <NestedList>
                 @foreach (var item in _db.NIP4Authors)
                 {
                     var text = (item == _db.PubKeyHex) ? "Myself" : item;
-                    <MudListItem Dense="true" OnClick="() => ChooseDm(item)">
+                    <MudListItem Dense="true" OnClick="() => ChooseDm(item)" Value="@item">
                         @text
                     </MudListItem>
                 }
 
             </NestedList>
         </MudListItem>
+    }
+    @if (_db.Threads.Any())
+    {
         <MudListItem Text="Followed Threads" InitiallyExpanded="true" Dense="true">
             <NestedList>
                 @foreach (var item in _db.Threads)
                 {
-                    <MudListItem Dense="true" OnClick="() => ChooseThread(item.Key)">
+                    <MudListItem Dense="true" OnClick="() => ChooseThread(item.Key)" Value="@item">
                         @item.Value
                     </MudListItem>
                 }
             </NestedList>
         </MudListItem>
-    </MudList>
-}
+    }
+</MudList>

@@ -1,16 +1,46 @@
-﻿@page "/Lonely"
-<MudContainer Class="mt-16" MaxWidth="MaxWidth.Medium">
-    <MudText Typo="Typo.h3" Align="Align.Center" GutterBottom="true">New Direct Message or thread</MudText>
-    <GoToGenericChannel OnChosen="Callback"></GoToGenericChannel>
-    <MudText Typo="Typo.h3" Align="Align.Center" GutterBottom="true">New Thread</MudText>
-    <CreateNewThread></CreateNewThread>
+﻿@page "/lonely"
+@layout FullLayout
 
-    <MudText>Your pubkey is @Db.PubKeyHex</MudText>
-    <ChatChannels OnChosen="Callback"></ChatChannels>
-</MudContainer>
+    <MudGrid>
+        <MudItem xs="12">
+            <MudCard>
+                <MudCardHeader>
+                    <MudText Typo="Typo.h3">
+                        Send a DM or open an existing thread
+                    </MudText>
+                </MudCardHeader>
+                <MudCardContent>
 
+                    
+            <ChatChannels OnChosen="Callback"></ChatChannels>
+                    <GoToGenericChannel OnChosen="Callback"></GoToGenericChannel>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+
+        <MudItem xs="12">
+            <MudCard>
+                <MudCardHeader>
+                    <MudText Typo="Typo.h3">
+                        Start a new thread
+                    </MudText>
+                </MudCardHeader>
+                <MudCardContent>
+                    <CreateNewThread></CreateNewThread>
+                </MudCardContent>
+            </MudCard>
+        </MudItem>
+    </MudGrid>
 @code {
 
+    [CascadingParameter]
+    public FullLayout Layout { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        Layout.DrawerOpen = false;
+    }
 
     [Inject]
     public Db Db { get; set; }
@@ -38,7 +68,5 @@
                 break;
         }
     }
-
-}
 
 }

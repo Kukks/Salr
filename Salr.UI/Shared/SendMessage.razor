@@ -25,20 +25,36 @@
         }
     }
 
+    [Parameter]
+    public string ReferencedEvent { get; set; }
+
+    [Parameter]
+    public EventCallback<string> ReferencedEventChanged { get; set; }
+
 }
 
-<ValidationEditContext Model="this" @ref="_validationEditContext" OnValidSubmit="OnSubmit" style="width: 100%">
-    <div class="d-flex">
-        <MudTextField @bind-Value="NewChatMessage"
-                      For="() => NewChatMessage"
-                      OnKeyPress="OnKeyPress"
-                      Placeholder="Enter your message..."
-                      Lines="3">
-        </MudTextField>
-        <MudIconButton ButtonType="ButtonType.Submit"
-                       
-                       Icon="@Icons.Material.Outlined.Send">
-        </MudIconButton>
-    </div>
+<MudGrid Spacing="0" Class="mx-0">
 
-</ValidationEditContext>
+    @if (ReferencedEvent is not null)
+    {
+        <MudItem xs="12">
+            <ReferencedEvent Event="@ReferencedEvent" AllowClear="true" OnClear="() => ReferencedEventChanged.InvokeAsync(null)"></ReferencedEvent>
+
+        </MudItem>
+    }
+
+    <MudItem xs="12">
+        <ValidationEditContext Model="this" @ref="_validationEditContext" OnValidSubmit="OnSubmit" style="width: 100%">
+            <MudTextField @bind-Value="NewChatMessage"
+                          For="() => NewChatMessage"
+                          OnKeyPress="OnKeyPress"
+                          Placeholder="Enter your message..."
+                          AdornmentIcon="@Icons.Material.Outlined.Send"
+                          Adornment="Adornment.End"
+                          OnAdornmentClick="_validationEditContext.Submit"
+                          Lines="3">
+            </MudTextField>
+        </ValidationEditContext>
+
+    </MudItem>
+</MudGrid>
