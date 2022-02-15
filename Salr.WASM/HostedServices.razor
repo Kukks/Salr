@@ -7,7 +7,7 @@
 @code
 {
     [Inject]
-    private IEnumerable<IHostedService> InjectedHostedServices { get; set; }
+    private IEnumerable<ISimilarHostedService> InjectedHostedServices { get; set; }
 
     [Parameter]
     public CancellationToken? HostedServicesCancellationToken { get; set; }

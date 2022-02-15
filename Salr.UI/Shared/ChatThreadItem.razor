@@ -13,12 +13,17 @@
     {
         await base.OnInitializedAsync();
         Db.EventNoLongerPending += EventNoLongerPending;
-        Db.EventsReceived += EventsReceived;
+        Db.EventProcessed += EventProcessed;
     }
 
-    private void EventsReceived(object? sender, (string subscriptionId, NostrEvent[] events, Uri known) e)
+
+    private void EventProcessed(object? sender, NostrEvent e)
     {
-        if (NestedMode && e.events.Any(evt => evt.GetTaggedEvents().Contains(EventId)))
+        if (e.Id == EventId)
+        {
+            InvokeAsync(StateHasChanged);
+        }
+        else if (NestedMode && e.GetTaggedEvents().Contains(EventId))
         {
             GetReplies();
             InvokeAsync(StateHasChanged);
@@ -37,7 +42,7 @@
     public void GetReplies()
     {
         Db.ReplyToEvent.TryGetValue(EventId, out var replies);
-        _replies = replies?.ToArray() ?? Array.Empty<string>();
+        _replies = replies?.ToHashSet() ?? new HashSet<string>();
     }
 
     public bool Expanded
@@ -103,13 +108,13 @@
 
     private string _eventId;
     private bool _expanded;
-    private string[] _replies;
+    private HashSet<string> _replies;
     public bool ShowRawJson { get; set; }
 
     public void Dispose()
     {
         Db.EventNoLongerPending -= EventNoLongerPending;
-        Db.EventsReceived -= EventsReceived;
+        Db.EventProcessed -= EventProcessed;
     }
 
 
@@ -198,7 +203,7 @@
                                                 @if (ShowRawJson)
                                                 {
                                                     <pre style="white-space: break-spaces; word-break: break-word;">
-                                                    @JsonSerializer.Serialize(Event, new JsonSerializerOptions { WriteIndented = true })
+                                                    @JsonSerializer.Serialize(Event, new JsonSerializerOptions {WriteIndented = true})
                                                 </pre>
                                                 }
                                             </DialogContent>
@@ -236,7 +241,8 @@
             <MudPaper>
                 <ChatThread
                     OnReply="OnReply"
-                    Events="@_replies" AllowReply="true" OnInlineReply="OnInlineReply" Depth="@(Depth + 1)" NestedMode="NestedMode" ParentEvent="@EventId"></ChatThread>
+                    Events="@_replies" AllowReply="true" OnInlineReply="OnInlineReply" Depth="@(Depth + 1)" NestedMode="NestedMode" ParentEvent="@EventId">
+                </ChatThread>
             </MudPaper>
         }
         @if (AllowReply && Expanded && InlineReply)

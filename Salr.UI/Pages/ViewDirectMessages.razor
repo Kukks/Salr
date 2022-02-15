@@ -63,7 +63,7 @@
     [Parameter]
     public string Pubkey { get; set; }
 
-    public string[] Events { get; set; }
+    public HashSet<string>Events { get; set; }
 
     public bool NestedMode { get; set; } = true;
     protected override async Task OnInitializedAsync()
@@ -74,7 +74,7 @@
         await Db.Subscribe("direct-dm", _filters);
         Db.EventsReceived += EventsReceived;
 
-        Events = GetEvents();
+        Events = GetEvents(Db.Events.Values);
     }
 
     public string Title { get; set; }
@@ -84,24 +84,23 @@
     {
         if (e.subscriptionId == "direct-dm")
         {
-            Events = GetEvents();
+            var filtered = GetEvents(e.events);
+            foreach (var evt in filtered)
+            {
+                Events.Add(evt);
+            }
             InvokeAsync(StateHasChanged);
         }
     }
 
-    private string[] GetEvents()
+    private HashSet<string> GetEvents(IEnumerable<NostrEvent> evts )
     {
-        var res = Db.Events.Values.Filter(false, _filters)
+        var res = evts.Filter(false, _filters)
             .Where(e => !NestedMode || !Db.DecryptedNIP4Content.ContainsKey(e.GetTaggedEvents().FirstOrDefault() ?? string.Empty))
             .OrderBy(e => e.CreatedAt);
 
-        foreach (var nostrEvent in res)
-        {
-            Console.WriteLine(nostrEvent.GetTaggedEvents().FirstOrDefault());
-        }
-        
         return res.Select(e => e.Id)
-            .ToArray();
+            .ToHashSet();
 
     }
     public async Task ConstructEvent(string message, string replyTo = null)

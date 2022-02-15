@@ -1,3 +1,7 @@
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Salr.UI.Services;
 using Salr.WebCommon;
 using Microsoft.AspNetCore.Builder;
@@ -6,12 +10,33 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using MudBlazor.Services;
+using NNostr.UI;
 using Salr.Abstractions.Contracts;
 using Salr.Abstractions.Services;
 using Salr.Server.Services;
 
 namespace Salr.Server
 {
+    public class HostedServiceWrapper : IHostedService
+    {
+        private readonly IEnumerable<ISimilarHostedService> _similarHostedServices;
+
+        public HostedServiceWrapper(IEnumerable<ISimilarHostedService> similarHostedServices)
+        {
+            _similarHostedServices = similarHostedServices;
+        }
+
+        public Task StartAsync(CancellationToken cancellationToken)
+        {
+            return Task.WhenAll(_similarHostedServices.Select(service => service.StartAsync(cancellationToken)));
+        }
+
+        public Task StopAsync(CancellationToken cancellationToken)
+        {
+            return Task.WhenAll(_similarHostedServices.Select(service => service.StopAsync(cancellationToken)));
+        }
+    }
+
     public class Startup
     {
         public Startup(IConfiguration configuration)
@@ -37,6 +62,7 @@ namespace Salr.Server
             services.AddMudServices();
 
             services.AddDataProtection();
+            services.AddHostedService<HostedServiceWrapper>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

@@ -82,7 +82,7 @@
     [Parameter]
     public string Id { get; set; }
 
-    public string[] Events { get; set; }
+    public HashSet<string> Events { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -102,7 +102,7 @@
         await Db.Subscribe("thread-toplevel", _filters);
         Db.EventsReceived += EventsReceived;
 
-        Events = GetEvents();
+        Events = GetEvents(Db.Events.Values);
     }
 
     public bool SavedThread { get; set; }
@@ -133,19 +133,22 @@
             {
                 Title = mainEvent.Content;
             }
-            
-            
-            Events = GetEvents();
+
+            var filtered =GetEvents(e.events);
+            foreach (var evt in filtered)
+            {
+                Events.Add(evt);
+            }
             InvokeAsync(StateHasChanged);
         }
     }
 
-    private string[] GetEvents()
+    private HashSet<string> GetEvents(IEnumerable<NostrEvent> events )
     {
-        return Db.Events.Values.Filter(false, _filters)
+        return events.Filter(false, _filters)
             .OrderBy(e => e.CreatedAt)
             .Select(e => e.Id)
-            .ToArray();
+            .ToHashSet();
     }
 
     public async Task ConstructEvent(string message)

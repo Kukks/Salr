@@ -21,6 +21,7 @@ namespace Salr.WASM
             var builder = WebAssemblyHostBuilder.CreateDefault(args);
             builder.RootComponents.Add<App>("app");
             builder.RootComponents.Add<WasmAES>("wasmaes");
+            builder.RootComponents.Add<HostedServices>("hostedservices");
 
             builder.Services.AddUIServices();
             builder.Services.AddSingleton<ILocalContentFetcher, HttpClientLocalContentFetcher>();

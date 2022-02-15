@@ -9,7 +9,7 @@ using NNostr.UI;
 using Salr.UI;
 
 
-public class NostrRelayListener : IHostedService
+public class NostrRelayListener : ISimilarHostedService
 {
     private NostrClient _nostrClient;
 
