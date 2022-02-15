@@ -4,17 +4,19 @@ namespace Salr.UI;
 
 public static class SalrDataExtensions
 {
-    public static NostrSubscriptionFilter[] GetDirectMessageThreadFilters(string pubkey)
+    public static NostrSubscriptionFilter[] GetDirectMessageThreadFilters(string pubkey, string pubkey2)
     {
         return new[]
         {
             new NostrSubscriptionFilter()
             {
                 Authors = new[] { pubkey },
+                PublicKey = new[] { pubkey2 },
                 Kinds = new[] { 4 },
             },
             new NostrSubscriptionFilter()
             {
+                Authors = new[] { pubkey2 },
                 PublicKey = new[] { pubkey },
                 Kinds = new[] { 4 },
             }

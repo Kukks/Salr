@@ -70,7 +70,7 @@
     {
         Title = $"Direct Message {Pubkey}";
         await base.OnInitializedAsync();
-        _filters = SalrDataExtensions.GetDirectMessageThreadFilters(Pubkey);
+        _filters = SalrDataExtensions.GetDirectMessageThreadFilters(Pubkey, Db.PubKeyHex);
         await Db.Subscribe("direct-dm", _filters);
         Db.EventsReceived += EventsReceived;
 
